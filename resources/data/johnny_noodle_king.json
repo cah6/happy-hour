@@ -1,0 +1,18 @@
+{
+  "city": "Detroit",
+  "restaurant": "Johnny Noodle King",
+  "schedule": [
+    {
+      "days": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday"
+      ],
+      "time": "15:00-18:00",
+      "scheduleDescription": "$1 Sapporo, $2 Sake"
+    }
+  ],
+  "link": "https://detroit.eater.com/maps/best-new-detroit-happy-hour-map/johnny-noodle-king"
+}
