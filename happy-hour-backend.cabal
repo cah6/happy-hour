@@ -24,7 +24,6 @@ executable happy-hour-backend
                     , aeson-pretty
 										, attoparsec
   						      , beam-core
-		                , beam-sqlite
 		                , beam-postgres
 										, bytestring
 		                , containers
@@ -33,9 +32,9 @@ executable happy-hour-backend
 										, monad-logger
 										, monad-time
 		                , mtl
+										, postgresql-simple
 										, safe-money
 										, servant-server
-		                , sqlite-simple
 		                , stm 
 		                , text
 		                , time
@@ -53,9 +52,13 @@ executable happy-hour-backend
 		DeriveGeneric
 		FlexibleContexts
 		FlexibleInstances
+		GADTs
 		GeneralizedNewtypeDeriving
 		LambdaCase
 		OverloadedStrings
+		StandaloneDeriving
 		RecordWildCards
 		TemplateHaskell
+		TypeFamilies
 		TypeOperators
+		TypeSynonymInstances

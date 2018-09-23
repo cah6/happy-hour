@@ -16,7 +16,7 @@ import           System.IO
 
 import Backend.Server
 import Common.Dto
-import Common.RestEndpoints
+import Common.Routes
 
 hhApi :: Proxy HappyHourApi
 hhApi = Proxy
@@ -48,4 +48,4 @@ nt (MyApp m) = do
     Right res -> return res
 
 server :: ServerT HappyHourApi MyApp
-server = putHH :<|> getHH
+server = putHH :<|> getHH :<|> getAllHH
