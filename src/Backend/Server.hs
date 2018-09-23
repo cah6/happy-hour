@@ -11,34 +11,36 @@ import Data.Aeson.Encode.Pretty (encodePrettyToTextBuilder)
 import Data.Text
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder (toLazyText)
+import Data.UUID
 import Servant
 
-import Backend.Tables ()
-import Common.Dto
+import Backend.Interfaces
+import Backend.Tables as DB
+import Common.Dto as DTO
 
-putHH :: (MonadLogger m, MonadError ServantErr m)
-  => Integer 
-  -> HappyHour 
-  -> m ()
-putHH i hh = do
-  logInfoN $ "PUT called with data:\n" <> (toStrict . toLazyText . encodePrettyToTextBuilder) hh 
-  throwError err400
-  return ()
+createHH :: (MonadLogger m, MonadError ServantErr m, SaveHappyHour m, GenUUID m)
+  => DTO.HappyHour 
+  -> m UUID
+createHH hh = do
+  logInfoN $ "POST called with data:\n" <> (toStrict . toLazyText . encodePrettyToTextBuilder) hh 
+  uuid <- genUUID
+  createHappyHour $ happyHourDtoToDb uuid hh
+  return uuid
 
 getHH :: (MonadLogger m) 
   => Integer 
-  -> m HappyHour
+  -> m DTO.HappyHour
 getHH a = do 
   logInfoN "Getting happy hour by id..."
   return defaultHH
 
 getAllHH :: (MonadLogger m) 
-  => m [HappyHour]
+  => m [DTO.HappyHour]
 getAllHH = do 
   logInfoN "Getting all happy hours..."
   return [defaultHH]
 
-getHappyHourById :: Integer -> Handler HappyHour
+getHappyHourById :: Integer -> Handler DTO.HappyHour
 getHappyHourById a = do 
   menu <- liftIO jnkMenu
   case (parseHH menu) of
@@ -48,5 +50,8 @@ getHappyHourById a = do
 jnkMenu :: IO B.ByteString
 jnkMenu = B.readFile "resources/data/johnny_noodle_king.json"
 
-parseHH :: B.ByteString -> Either String HappyHour
+parseHH :: B.ByteString -> Either String DTO.HappyHour
 parseHH bs = eitherDecode bs
+
+happyHourDtoToDb :: UUID -> DTO.HappyHour -> DB.HappyHour
+happyHourDtoToDb uuid DTO.HappyHour{..} = DB.HappyHour { _id = uuid, ..}

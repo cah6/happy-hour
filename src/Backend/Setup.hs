@@ -3,10 +3,14 @@ module Backend.Setup where
 
 import Control.Monad.Except
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Logger (LoggingT, MonadLogger(..), logInfoN, runStderrLoggingT, runStdoutLoggingT)
+-- import Control.Monad.Logger (LoggingT, MonadLogger(..), logInfoN, runStderrLoggingT, runStdoutLoggingT)
+import Control.Monad.Logger
 import qualified Data.ByteString.Lazy as B
 import            Data.Text
 import           Data.Aeson
+import Data.String (IsString)
+import Database.Beam
+import Database.Beam.Postgres
 import           GHC.Generics
 import           Network.Wai
 import           Network.Wai.Handler.Warp
@@ -14,7 +18,9 @@ import           Network.Wai.Logger       (withStdoutLogger)
 import           Servant
 import           System.IO
 
+import Backend.Interfaces
 import Backend.Server
+import qualified Backend.Tables as DB
 import Common.Dto
 import Common.Routes
 
@@ -37,7 +43,11 @@ mkApp = serve hhApi serverDefinition
 
 -- My custom servant stack
 newtype MyApp a = MyApp { runMyApp :: ExceptT ServantErr (LoggingT IO) a }
-  deriving (Functor, Applicative, Monad, MonadLogger, MonadIO, MonadError ServantErr)
+  deriving (Functor, Applicative, Monad, MonadLogger, MonadIO, MonadError ServantErr, 
+            SaveHappyHour, GenUUID)
+
+class (Monad m) => GetHappyHours m where
+  getHappyHours :: m [HappyHour]
 
 -- Custom stack -> predefined servant stack
 nt :: MyApp a -> Handler a 
@@ -48,4 +58,4 @@ nt (MyApp m) = do
     Right res -> return res
 
 server :: ServerT HappyHourApi MyApp
-server = putHH :<|> getHH :<|> getAllHH
+server = createHH :<|> getHH :<|> getAllHH
