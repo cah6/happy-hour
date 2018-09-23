@@ -34,11 +34,12 @@ getHH a = do
   logInfoN "Getting happy hour by id..."
   return defaultHH
 
-getAllHH :: (MonadLogger m) 
+getHHs :: (MonadLogger m, QueryHappyHours m) 
   => m [DTO.HappyHour]
-getAllHH = do 
+getHHs = do 
   logInfoN "Getting all happy hours..."
-  return [defaultHH]
+  dbHHs <- getAllHappyHours
+  return (happyHourDbToDto <$> dbHHs)
 
 getHappyHourById :: Integer -> Handler DTO.HappyHour
 getHappyHourById a = do 
@@ -55,3 +56,9 @@ parseHH bs = eitherDecode bs
 
 happyHourDtoToDb :: UUID -> DTO.HappyHour -> DB.HappyHour
 happyHourDtoToDb uuid DTO.HappyHour{..} = DB.HappyHour { _id = uuid, ..}
+
+happyHourDbToDto :: DB.HappyHour -> DTO.HappyHour
+happyHourDbToDto DB.HappyHour{..} = defaultHH 
+  { DTO._city = _city
+  , DTO._restaurant = _restaurant
+  }

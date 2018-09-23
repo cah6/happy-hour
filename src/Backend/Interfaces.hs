@@ -9,7 +9,7 @@ import Database.Beam.Postgres
 import Data.UUID
 import Data.UUID.V4 (nextRandom)
 
-import Backend.Tables as DB
+import Backend.Tables
 
 -- This file defines my "custom effects". The general procedure for this is:
 -- 1. Define the monad
@@ -45,6 +45,23 @@ instance SaveHappyHour IO where
   createHappyHour hh = do
     conn <- liftIO $ connect defaultConnectInfo { connectDatabase = "happyhour1", connectUser = "" }
     _ <- liftIO $ runBeamPostgres conn $ runInsert $ 
-      insert (DB._tableHappyHour DB.happyHourDb) $ 
+      insert (_tableHappyHour happyHourDb) $ 
       insertValues [hh]
     return ()
+
+-- QueryHappyHours section
+class (Monad m) => QueryHappyHours m where
+  getAllHappyHours :: m [HappyHour]
+  
+  default getAllHappyHours :: (MonadTrans t, QueryHappyHours m', m ~ t m') => m [HappyHour]
+  getAllHappyHours = lift getAllHappyHours
+
+instance QueryHappyHours m => QueryHappyHours (LoggingT m)
+instance QueryHappyHours m => QueryHappyHours (ExceptT e m)
+
+instance QueryHappyHours IO where
+  -- equivalent to "select * from happy_hour"
+  getAllHappyHours = do
+    conn <- liftIO $ connect defaultConnectInfo { connectDatabase = "happyhour1", connectUser = "" }
+    dbHHs <- runBeamPostgres conn $ runSelectReturningList $ select $ all_ (_tableHappyHour happyHourDb)
+    return dbHHs

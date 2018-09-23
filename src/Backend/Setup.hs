@@ -44,10 +44,7 @@ mkApp = serve hhApi serverDefinition
 -- My custom servant stack
 newtype MyApp a = MyApp { runMyApp :: ExceptT ServantErr (LoggingT IO) a }
   deriving (Functor, Applicative, Monad, MonadLogger, MonadIO, MonadError ServantErr, 
-            SaveHappyHour, GenUUID)
-
-class (Monad m) => GetHappyHours m where
-  getHappyHours :: m [HappyHour]
+            SaveHappyHour, QueryHappyHours, GenUUID)
 
 -- Custom stack -> predefined servant stack
 nt :: MyApp a -> Handler a 
@@ -58,4 +55,4 @@ nt (MyApp m) = do
     Right res -> return res
 
 server :: ServerT HappyHourApi MyApp
-server = createHH :<|> getHH :<|> getAllHH
+server = createHH :<|> getHH :<|> getHHs
