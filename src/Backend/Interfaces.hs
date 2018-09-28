@@ -1,4 +1,7 @@
 {-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE InstanceSigs #-}
 module Backend.Interfaces where
 
 import Control.Monad.Except (ExceptT)
@@ -8,8 +11,10 @@ import Database.Beam
 import Database.Beam.Postgres
 import Data.UUID
 import Data.UUID.V4 (nextRandom)
+import Database.V5.Bloodhound.Client
+import Database.V5.Bloodhound.Types
 
-import Backend.Tables
+import Common.Dto
 
 -- This file defines my "custom effects". The general procedure for this is:
 -- 1. Define the monad
@@ -31,37 +36,46 @@ instance GenUUID m => GenUUID (ExceptT e m)
 instance GenUUID IO where
   genUUID = nextRandom
 
--- SaveHappyHour section
-class (Monad m) => SaveHappyHour m where
-  createHappyHour :: HappyHour -> m ()
+-- MonadCrudHappyHour section
+class (Monad m) => MonadCrudHappyHour m where
+  upsertHappyHour :: UUID -> HappyHour -> m ()
+  getHappyHour :: UUID -> m Reply
+  deleteHappyHour :: UUID -> m ()
+  -- queryHappyHours :: m [HappyHour]
   
-  default createHappyHour :: (MonadTrans t, SaveHappyHour m', m ~ t m') => HappyHour -> m ()
-  createHappyHour = lift . createHappyHour
+  default upsertHappyHour :: (MonadTrans t, MonadCrudHappyHour m', m ~ t m') => UUID -> HappyHour -> m ()
+  upsertHappyHour id = lift . (upsertHappyHour id)
 
-instance SaveHappyHour m => SaveHappyHour (LoggingT m)
-instance SaveHappyHour m => SaveHappyHour (ExceptT e m)
+  default getHappyHour :: (MonadTrans t, MonadCrudHappyHour m', m ~ t m') => UUID -> m Reply
+  getHappyHour = lift . getHappyHour
 
-instance SaveHappyHour IO where
-  createHappyHour hh = do
-    conn <- liftIO $ connect defaultConnectInfo { connectDatabase = "happyhour1", connectUser = "" }
-    _ <- liftIO $ runBeamPostgres conn $ runInsert $ 
-      insert (_tableHappyHour happyHourDb) $ 
-      insertValues [hh]
-    return ()
+  default deleteHappyHour :: (MonadTrans t, MonadCrudHappyHour m', m ~ t m') => UUID -> m ()
+  deleteHappyHour = lift . deleteHappyHour
 
--- QueryHappyHours section
-class (Monad m) => QueryHappyHours m where
-  getAllHappyHours :: m [HappyHour]
-  
-  default getAllHappyHours :: (MonadTrans t, QueryHappyHours m', m ~ t m') => m [HappyHour]
-  getAllHappyHours = lift getAllHappyHours
+instance MonadCrudHappyHour m => MonadCrudHappyHour (LoggingT m)
+instance MonadCrudHappyHour m => MonadCrudHappyHour (ExceptT e m)
 
-instance QueryHappyHours m => QueryHappyHours (LoggingT m)
-instance QueryHappyHours m => QueryHappyHours (ExceptT e m)
+hhIndex = IndexName "happy_hours"
+hhMapping = MappingName "happy_hours"
 
-instance QueryHappyHours IO where
-  -- equivalent to "select * from happy_hour"
-  getAllHappyHours = do
-    conn <- liftIO $ connect defaultConnectInfo { connectDatabase = "happyhour1", connectUser = "" }
-    dbHHs <- runBeamPostgres conn $ runSelectReturningList $ select $ all_ (_tableHappyHour happyHourDb)
-    return dbHHs
+instance (MonadBH m) => MonadCrudHappyHour (BH m) where
+  upsertHappyHour uuid hh = 
+    let 
+      docId = DocId (toText uuid)
+    in
+      indexDocument hhIndex hhMapping defaultIndexDocumentSettings hh docId 
+        >>= \_ -> return ()
+
+  getHappyHour uuid = 
+    let
+      docId = DocId (toText uuid)
+      parseReply :: Reply -> HappyHour
+      parseReply = undefined
+    in  
+      getDocument hhIndex hhMapping docId
+
+  deleteHappyHour uuid = 
+    let
+      docId = DocId (toText uuid)
+    in
+      deleteDocument hhIndex hhMapping docId >>= \_ -> return ()

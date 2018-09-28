@@ -2,3 +2,5 @@
 dist/
 dist-newstyle/
 result
+elasticsearch/data/
+elasticsearch/logs/

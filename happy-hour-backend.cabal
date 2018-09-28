@@ -25,9 +25,11 @@ executable happy-hour-backend
 										, attoparsec
   						      , beam-core
 		                , beam-postgres
+										, bloodhound
 										, bytestring
 		                , containers
 										, directory
+										, http-client
 		                , lens
 										, monad-logger
 										, monad-time
@@ -56,6 +58,7 @@ executable happy-hour-backend
 		FlexibleInstances
 		GADTs
 		GeneralizedNewtypeDeriving
+		InstanceSigs
 		LambdaCase
 		OverloadedStrings
 		StandaloneDeriving

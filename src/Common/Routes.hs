@@ -6,6 +6,13 @@ import Data.UUID (UUID)
 import Common.Dto
 
 type HappyHourApi =
-      "happy-hour" :> ReqBody '[JSON] HappyHour :> Post '[JSON] UUID
-  :<|>"happy-hour" :> Capture "happy-hour-id" Integer :> Get '[JSON] HappyHour
-  :<|>"happy-hour" :> Get '[JSON] [HappyHour]
+      -- createHH
+      "happy-hours" :> ReqBody '[JSON] HappyHour :> Post '[JSON] UUID
+      -- updateHH
+  :<|>"happy-hours" :> Capture "happy-hour-id" UUID :> ReqBody '[JSON] HappyHour :> Put '[JSON] ()
+      -- deleteHH
+  :<|>"happy-hours" :> Capture "happy-hour-id" UUID :> Delete '[JSON] ()
+      -- getHH
+  :<|>"happy-hours" :> Capture "happy-hour-id" UUID :> Get '[JSON] HappyHour
+      -- queryHHs
+  :<|>"happy-hours" :> Get '[JSON] [HappyHour]

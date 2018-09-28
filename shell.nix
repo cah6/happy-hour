@@ -10,6 +10,7 @@ let
       pinnedPkgs.haskellPackages.cabal-install
       pinnedPkgs.haskellPackages.hsimport
       pinnedPkgs.postgresql
+      pinnedPkgs.	elasticsearch5
       ];
     shellHook = ''
       export PGDATA="./pgsql/data"

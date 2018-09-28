@@ -44,7 +44,7 @@ printTimeOfDay :: TimeOfDay -> Text
 printTimeOfDay = pack . formatTime defaultTimeLocale "%-l:%M%P"
 
 printTimeOfDayMilitary :: TimeOfDay -> Text
-printTimeOfDayMilitary = pack . formatTime defaultTimeLocale "%I:%M"
+printTimeOfDayMilitary = pack . formatTime defaultTimeLocale "%H:%M"
 
 loadHHs :: IO (Either String [HappyHour])
 loadHHs = do
