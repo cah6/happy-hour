@@ -79,19 +79,19 @@ queryHHs = do
 
 parseSingleDocResponse :: BL.ByteString -> SearchResponse DTO.HappyHour
 parseSingleDocResponse bs = case eitherDecode bs of 
-  (Left err)          -> ParserError (pack err)
-  (Right esResponse)  -> case esResponse of
-    (MyEsError (EsError{..})) -> EsJsonError errorMessage
-    (EsSuccess (EsResult{..})) -> case foundResult of 
+  Left err          -> ParserError (pack err)
+  Right esResponse  -> case esResponse of
+    MyEsError EsError{..}   -> EsJsonError errorMessage
+    EsSuccess EsResult{..}  -> case foundResult of 
       Nothing                           -> SourceNotFound
       Just (EsResultFound version doc)  -> Entity doc
     
 parseMultiDocResponse :: BL.ByteString -> SearchResponse [DTO.HappyHour]
 parseMultiDocResponse bs = case eitherDecode bs of 
-  (Left err)          -> ParserError (pack err)
-  (Right esResponse)  -> case esResponse of
-    (MyEsError (EsError{..}))       -> EsJsonError errorMessage
-    (EsSuccess (SearchResult{..}))  -> Entity $ catMaybes (hitSource <$> hits searchHits)
+  Left err          -> ParserError (pack err)
+  Right esResponse  -> case esResponse of
+    MyEsError EsError{..}       -> EsJsonError errorMessage
+    EsSuccess SearchResult{..}  -> Entity $ catMaybes (hitSource <$> hits searchHits)
     
 logEsReply :: MonadLogger m => Reply -> m ()
 logEsReply r = logInfoN text >>= \_ -> return () where 

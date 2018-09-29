@@ -12,9 +12,9 @@ type HappyHourApi =
       -- createHH
       "happy-hours" :> ReqBody '[JSON] HappyHour :> Post '[JSON] UUID
       -- updateHH
-  :<|>"happy-hours" :> Capture "happy-hour-id" UUID :> ReqBody '[JSON] HappyHour :> Put '[JSON] ()
+  :<|>"happy-hours" :> Capture "happy-hour-id" UUID :> ReqBody '[JSON] HappyHour :> Put '[JSON] NoContent
       -- deleteHH
-  :<|>"happy-hours" :> Capture "happy-hour-id" UUID :> Delete '[JSON] ()
+  :<|>"happy-hours" :> Capture "happy-hour-id" UUID :> Delete '[JSON] NoContent
       -- getHH
   :<|>"happy-hours" :> Capture "happy-hour-id" UUID :> Get '[JSON] HappyHour
       -- queryHHs
