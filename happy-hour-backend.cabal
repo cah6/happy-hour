@@ -31,13 +31,16 @@ executable happy-hour-backend
 										, directory
 										, http-client
 		                , lens
+										, lens-aeson
 										, monad-logger
 										, monad-time
 		                , mtl
 										, postgresql-simple
 										, safe-money
 										, servant-server
+										, servant-swagger
 		                , stm 
+										, swagger2
 		                , text
 		                , time
 										, time-exts

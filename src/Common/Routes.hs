@@ -5,6 +5,9 @@ import Data.UUID (UUID)
 
 import Common.Dto
 
+hhApi :: Proxy HappyHourApi
+hhApi = Proxy
+
 type HappyHourApi =
       -- createHH
       "happy-hours" :> ReqBody '[JSON] HappyHour :> Post '[JSON] UUID

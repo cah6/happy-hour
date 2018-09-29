@@ -41,7 +41,7 @@ class (Monad m) => MonadCrudHappyHour m where
   upsertHappyHour :: UUID -> HappyHour -> m ()
   getHappyHour :: UUID -> m Reply
   deleteHappyHour :: UUID -> m ()
-  -- queryHappyHours :: m [HappyHour]
+  queryHappyHours :: QueryParams -> m Reply
   
   default upsertHappyHour :: (MonadTrans t, MonadCrudHappyHour m', m ~ t m') => UUID -> HappyHour -> m ()
   upsertHappyHour id = lift . (upsertHappyHour id)
@@ -52,11 +52,16 @@ class (Monad m) => MonadCrudHappyHour m where
   default deleteHappyHour :: (MonadTrans t, MonadCrudHappyHour m', m ~ t m') => UUID -> m ()
   deleteHappyHour = lift . deleteHappyHour
 
+  default queryHappyHours :: (MonadTrans t, MonadCrudHappyHour m', m ~ t m') => QueryParams -> m Reply
+  queryHappyHours = lift . queryHappyHours
+
 instance MonadCrudHappyHour m => MonadCrudHappyHour (LoggingT m)
 instance MonadCrudHappyHour m => MonadCrudHappyHour (ExceptT e m)
 
 hhIndex = IndexName "happy_hours"
 hhMapping = MappingName "happy_hours"
+
+data QueryParams = QueryParams
 
 instance (MonadBH m) => MonadCrudHappyHour (BH m) where
   upsertHappyHour uuid hh = 
@@ -79,3 +84,5 @@ instance (MonadBH m) => MonadCrudHappyHour (BH m) where
       docId = DocId (toText uuid)
     in
       deleteDocument hhIndex hhMapping docId >>= \_ -> return ()
+
+  queryHappyHours qp = searchByIndex hhIndex (mkSearch Nothing Nothing)

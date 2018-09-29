@@ -3,32 +3,27 @@ module Backend.Setup where
 
 import Control.Monad.Except
 import Control.Monad.IO.Class (liftIO)
--- import Control.Monad.Logger (LoggingT, MonadLogger(..), logInfoN, runStderrLoggingT, runStdoutLoggingT)
 import Control.Monad.Logger
 import Database.V5.Bloodhound.Client
 import Database.V5.Bloodhound.Types
-import qualified Data.ByteString.Lazy as B
-import            Data.Text
-import           Data.Aeson
+import Data.Text
+import Data.Aeson
 import Data.String (IsString)
 import Database.Beam
 import Database.Beam.Postgres
-import           GHC.Generics
+import GHC.Generics
 import Network.HTTP.Client (newManager, defaultManagerSettings)
-import           Network.Wai
-import           Network.Wai.Handler.Warp
-import           Network.Wai.Logger       (withStdoutLogger)
-import           Servant
-import           System.IO
+import Network.Wai
+import Network.Wai.Handler.Warp
+import Network.Wai.Logger (withStdoutLogger)
+import Servant
+import System.IO
 
 import Backend.Interfaces
 import Backend.MtlServer
 import qualified Backend.Tables as DB
 import Common.Dto
 import Common.Routes
-
-hhApi :: Proxy HappyHourApi
-hhApi = Proxy
 
 -- Define servant level settings and run server
 run :: IO ()
@@ -61,7 +56,7 @@ instance MonadBH m => MonadBH (LoggingT m) where
 instance MonadLogger m => MonadLogger (BH m)
 instance GenUUID m => GenUUID (BH m)
 
--- Custom stack -> predefined servant stack
+-- Custom stack -> predefined servant Handler stack
 nt :: MyApp a -> Handler a
 nt (MyApp m) = do
   bhEnv <- liftIO provideEnv

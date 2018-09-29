@@ -1,18 +1,22 @@
+{-# LANGUAGE DeriveAnyClass #-}
 module Backend.MtlServer where
 
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Text.Lazy.Builder as B
 
+import Control.Applicative
 import Control.Monad.Except (MonadError)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Logger (MonadLogger(..), logInfoN)
 import Data.Aeson
-import Data.Aeson.Types (Parser, parseMaybe)
+import Data.Aeson.Types
 import Data.Aeson.Encode.Pretty (encodePrettyToTextBuilder)
+import Data.Maybe (catMaybes)
+import Data.String (fromString)
 import Data.Text
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder (toLazyText)
-import Data.UUID
+import Data.UUID hiding (fromString)
 import Servant
 
 -- temp
@@ -21,6 +25,8 @@ import Data.Text.Encoding (decodeUtf8)
 import qualified Data.ByteString.Lazy      as BL
 import Database.V5.Bloodhound.Types
 import Network.HTTP.Client (responseBody)
+import Data.Aeson.Lens as Lens
+import GHC.Generics
 
 import Backend.Interfaces
 import Backend.Tables as DB
@@ -60,18 +66,51 @@ getHH :: (MonadLogger m, MonadError ServantErr m, MonadCrudHappyHour m)
   => UUID 
   -> m DTO.HappyHour
 getHH uuid = do 
-  logInfoN $ "Getting happy hour with id [" <> toText uuid <> "]..."
+  logInfoN $ "GET called with id [" <> toText uuid <> "]..."
   reply <- getHappyHour uuid
-  case decode (responseBody reply) >>= parseMaybe parseHH of 
-    Nothing -> throwError err404
-    Just a  -> return a
-
-parseHH :: Value -> Parser DTO.HappyHour
-parseHH = withObject "Expected object from Elasticsearch" (.: "_source")
+  handleSearchResponse $ parseSingleDocResponse (responseBody reply)
 
 queryHHs :: (MonadLogger m, MonadError ServantErr m, MonadCrudHappyHour m) 
   => m [DTO.HappyHour]
 queryHHs = do 
-  logInfoN "Getting all happy hours..."
-  throwError err400
-  return []
+  logInfoN $ "GET called with input..."
+  reply <- queryHappyHours QueryParams
+  handleSearchResponse $ parseMultiDocResponse (responseBody reply)
+
+parseSingleDocResponse :: BL.ByteString -> SearchResponse DTO.HappyHour
+parseSingleDocResponse bs = case eitherDecode bs of 
+  (Left err)          -> ParserError (pack err)
+  (Right esResponse)  -> case esResponse of
+    (MyEsError (EsError{..})) -> EsJsonError errorMessage
+    (EsSuccess (EsResult{..})) -> case foundResult of 
+      Nothing                           -> SourceNotFound
+      Just (EsResultFound version doc)  -> Entity doc
+    
+parseMultiDocResponse :: BL.ByteString -> SearchResponse [DTO.HappyHour]
+parseMultiDocResponse bs = case eitherDecode bs of 
+  (Left err)          -> ParserError (pack err)
+  (Right esResponse)  -> case esResponse of
+    (MyEsError (EsError{..}))       -> EsJsonError errorMessage
+    (EsSuccess (SearchResult{..}))  -> Entity $ catMaybes (hitSource <$> hits searchHits)
+    
+logEsReply :: MonadLogger m => Reply -> m ()
+logEsReply r = logInfoN text >>= \_ -> return () where 
+  text = (decodeUtf8 . BL.toStrict . responseBody) r
+
+data SearchResponse a = 
+    Entity a
+  | ParserError Text
+  | SourceNotFound
+  | EsJsonError Text
+
+handleSearchResponse :: (MonadError ServantErr m) => SearchResponse a -> m a
+handleSearchResponse r = case r of
+  Entity a        -> return a
+  ParserError e   -> throwError $ err500 { errBody = (fromString . show) e }
+  SourceNotFound  -> throwError err404
+  EsJsonError e   -> throwError $ err500 { errBody = "Database responded with: "<> (fromString . show) e }
+
+data EsResponse a = EsSuccess a | MyEsError EsError
+
+instance FromJSON a => FromJSON (EsResponse a) where 
+  parseJSON v = (EsSuccess <$> parseJSON v) <|> (MyEsError <$> parseJSON v)
