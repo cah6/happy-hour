@@ -29,6 +29,7 @@ executable happy-hour-backend
 										, bytestring
 		                , containers
 										, directory
+										, elm-export
 										, http-client
 		                , lens
 										, lens-aeson
@@ -37,6 +38,7 @@ executable happy-hour-backend
 		                , mtl
 										, postgresql-simple
 										, safe-money
+										, servant-elm
 										, servant-server
 										, servant-swagger
 		                , stm 
@@ -47,6 +49,7 @@ executable happy-hour-backend
 										, transformers
 										, uuid
 										, wai
+										, wai-cors
 										, wai-logger
 										, warp
   hs-source-dirs:      src

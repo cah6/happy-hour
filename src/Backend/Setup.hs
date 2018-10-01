@@ -15,9 +15,11 @@ import GHC.Generics
 import Network.HTTP.Client (newManager, defaultManagerSettings)
 import Network.Wai
 import Network.Wai.Handler.Warp
+import Network.Wai.Middleware.Cors (simpleCors)
 import Network.Wai.Logger (withStdoutLogger)
 import Servant
 import System.IO
+
 
 import Backend.Interfaces
 import Backend.MtlServer
@@ -35,7 +37,7 @@ run = do
     runSettings settings mkApp
 
 mkApp :: Application
-mkApp = serve hhApi serverDefinition
+mkApp = simpleCors $ serve hhApi serverDefinition
     where
   serverDefinition = hoistServer hhApi nt server
 

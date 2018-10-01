@@ -1,7 +1,9 @@
 { lib ? (import <nixpkgs> {}).pkgs.lib
 }:
 let 
-  pinnedPkgs = import ./pkgs-from-json.nix { json = ./nixos-master.json; };
+  pinnedPkgs = import ./pkgs-from-json.nix { json = ./nixos-18-09.json; };
+  # for elm 18.0
+  elmPkgs = import ./pkgs-from-json.nix { json = ./nixos-18-03.json; };
   haskellPackages = (import ./release.nix { withHoogle = true; } );
 
   projectDrvEnv = haskellPackages.project1.env.overrideAttrs (oldAttrs: rec {
@@ -9,8 +11,8 @@ let
       pinnedPkgs.haskellPackages.hlint
       pinnedPkgs.haskellPackages.cabal-install
       pinnedPkgs.haskellPackages.hsimport
-      pinnedPkgs.postgresql
-      pinnedPkgs.	elasticsearch5
+      pinnedPkgs.elasticsearch5
+      elmPkgs.elmPackages.elm
       ];
     shellHook = ''
       export PGDATA="./pgsql/data"

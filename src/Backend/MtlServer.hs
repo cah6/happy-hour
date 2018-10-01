@@ -48,19 +48,19 @@ createHH hh = do
 updateHH :: (MonadLogger m, MonadError ServantErr m, MonadCrudHappyHour m)
   => UUID
   -> DTO.HappyHour
-  -> m ()
+  -> m NoContent
 updateHH uuid hh = do
   _     <- logInfoN $ "PUT called with id [" <> toText uuid <> "] and data:\n" <> (toStrict . toLazyText . encodePrettyToTextBuilder) hh 
   _     <- upsertHappyHour uuid hh
-  return ()
+  return NoContent
 
 deleteHH :: (MonadLogger m, MonadError ServantErr m, MonadCrudHappyHour m)
   => UUID
-  -> m ()
+  -> m NoContent
 deleteHH uuid = do
   _     <- logInfoN $ "DELETE called with id [" <> toText uuid <> "]"
   deleteHappyHour uuid 
-  return ()
+  return NoContent
 
 getHH :: (MonadLogger m, MonadError ServantErr m, MonadCrudHappyHour m) 
   => UUID 
