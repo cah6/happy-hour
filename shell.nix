@@ -4,9 +4,9 @@ let
   pinnedPkgs = import ./pkgs-from-json.nix { json = ./nixos-18-09.json; };
   # for elm 18.0
   elmPkgs = import ./pkgs-from-json.nix { json = ./nixos-18-03.json; };
-  haskellPackages = (import ./release.nix { withHoogle = true; } );
+  myPackages = (import ./release.nix { withHoogle = true; } );
 
-  projectDrvEnv = haskellPackages.project1.env.overrideAttrs (oldAttrs: rec {
+  projectDrvEnv = myPackages.project1.env.overrideAttrs (oldAttrs: rec {
     buildInputs = oldAttrs.buildInputs ++ [ 
       pinnedPkgs.haskellPackages.hlint
       pinnedPkgs.haskellPackages.cabal-install
@@ -18,6 +18,5 @@ let
       export PGDATA="./pgsql/data"
     '';
   });
-
 in 
   projectDrvEnv

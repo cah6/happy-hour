@@ -20,7 +20,6 @@ import Network.Wai.Logger (withStdoutLogger)
 import Servant
 import System.IO
 
-
 import Backend.Interfaces
 import Backend.MtlServer
 import qualified Backend.Tables as DB
