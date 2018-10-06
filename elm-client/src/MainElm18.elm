@@ -5,7 +5,10 @@ import Http
 import Json.Decode as Decode
 import Data.HappyHour exposing (..)
 import Data.Schedule exposing (..)
+import Data.DayOfWeek exposing (..)
+import Data.TimeRange exposing (..)
 import Request.Default exposing (..)
+import Parser exposing (Parser, (|.), (|=), int, succeed, symbol, ignore, run)
 import Table as Table
 
 
@@ -155,28 +158,6 @@ view model =
     , mkTable model.tableEntries
     ]
 
--- tableConfig : Table.Config HappyHour Msg
--- tableConfig = 
---   Table.customConfig
---     { toId = \hh -> hh.city ++ hh.restaurant
---     , toMsg = SetTableState
---     , columns = 
---       [ Table.stringColumn "Restaurant" .restaurant
---       , Table.stringColumn "City" .city
---       , Table.stringColumn "Time" (\_ -> "")
---       , Table.stringColumn "Description" .link
---       ]
---     , customizations = myCustomizations
---     }
-
--- myCustomizations : Table.Customizations d m
--- myCustomizations =
---   let 
---     oldCustomization = Table.defaultCustomizations
---   in 
---     { oldCustomization 
---     | tableAttrs = [ class "table table-striped table-bordered" ] }
-
 mkTable : List HappyHour -> Html Msg
 mkTable xs = 
   table [ class "table table-hover table-bordered" ] [ mkHeaderRow,  mkTableRows xs ]
@@ -213,9 +194,67 @@ mkTableRow hh =
   in 
     List.indexedMap mapSchedules hh.schedule
 
+showTime : List DayOfWeek -> TimeRange -> String
+showTime xs timeRange =
+  let 
+    days = String.concat (List.intersperse "," (List.map showDayOfWeek xs))
+    -- dashSplit = String.split "-" timeRange
+    -- niceTimes = List.map militaryToStandard dashSplit
+  in 
+    days ++ ", " ++ militaryToStandard timeRange
+
+-- Try to convert military to standard time, returning military if something
+-- goes wrong.
+militaryToStandard : String -> String
+militaryToStandard military = military
+  -- case run militaryParser military of
+  --   Err err -> military
+  --   Ok parsed -> showParsedTimeRange (adjustHour parsed)
+
+type alias ParsedTimeRange = 
+  { startHour : Int
+  , startMinute : Int
+  , endHour : Int
+  , endMinute : Int
+  }
+
+adjustHour : ParsedTimeRange -> ParsedTimeRange
+adjustHour range = 
+  { range
+  | startHour = range.startHour % 12
+  , endHour = range.endHour % 12
+  }
+
+showParsedTimeRange : ParsedTimeRange -> String
+showParsedTimeRange range = 
+  (toString range.startHour) ++ ":" ++ (toString range.startMinute) ++
+  (toString range.endHour) ++ ":" ++ (toString range.endMinute)
+
+militaryParser : Parser ParsedTimeRange
+militaryParser =
+  succeed ParsedTimeRange
+    |= int
+    |. symbol ":"
+    |= int
+    |. symbol "-"
+    |= int
+    |. symbol ":"
+    |= int
+
+showDayOfWeek : DayOfWeek -> String
+showDayOfWeek day =
+  case day of 
+    Monday -> "M"
+    Tuesday -> "Tu"
+    Wednesday -> "W"
+    Thursday -> "Th"
+    Friday -> "F"
+    Saturday -> "Sat"
+    Sunday -> "Sun"
+
 scheduleToData : Schedule -> List (Html Msg)
 scheduleToData schedule = 
-  [ td [] [ text schedule.time ]
+  [ td [] [ text (showTime schedule.days schedule.time) ]
   , td [] [ text schedule.scheduleDescription ]
   ]
 

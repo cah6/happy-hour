@@ -1,6 +1,7 @@
-.*
-dist/
-dist-newstyle/
+dist-newstyle
 result
-elasticsearch/data/
-elasticsearch/logs/
+result-android
+result-ios
+result-exe
+.attr-cache
+ghcid-output.txt

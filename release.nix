@@ -7,12 +7,13 @@ let
 
   customHaskellPackages = pinnedHaskellPkgs.override (old: {
     overrides = pinnedPkgs.lib.composeExtensions (old.overrides or (_: _: {})) (self: super: {
-      happy-hour-backend = self.callCabal2nix "happy-hour-backend" ./. { };
+      backend-servant = self.callCabal2nix "backend-servant" ./backend-servant { };
+      common = self.callCabal2nix "common" ./common { };
     });
   });
 
   hoogleAugmentedPackages = import ./toggle-hoogle.nix { withHoogle = withHoogle; input = customHaskellPackages; };
 
 in
-  { project1 = hoogleAugmentedPackages.happy-hour-backend;
+  { project1 = hoogleAugmentedPackages.backend-servant;
   }

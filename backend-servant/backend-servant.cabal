@@ -1,9 +1,9 @@
-name:                happy-hour-backend
+name:                backend-servant
 version:             0.1.0.0
 -- synopsis:
 -- description:
-license:             BSD3
-license-file:        LICENSE
+-- license:             BSD3
+-- license-file:        ../LICENSE
 author:              Christian Henry
 maintainer:          christian.henry92@gmail.com
 -- copyright:
@@ -12,7 +12,7 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
-executable happy-hour-backend
+executable backend-servant
   main-is:            Main.hs
   -- other-modules:      
   build-depends:      base >=4.9
@@ -23,6 +23,7 @@ executable happy-hour-backend
                     , beam-postgres
                     , bloodhound
                     , bytestring
+                    , common
                     , containers
                     , directory
                     , elm-export
