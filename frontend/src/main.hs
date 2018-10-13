@@ -6,5 +6,5 @@ import Frontend
 main :: IO ()
 main = mainWidgetWithHead head body
     where 
-  css = $(embedFile "css/bootstrap-grid.css")
+  -- css = $(embedFile "css/bootstrap-grid.css")
   (head, body) = frontend

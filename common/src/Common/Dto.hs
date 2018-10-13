@@ -37,6 +37,9 @@ printTimeRangeMilitary :: TimeRange -> Text
 printTimeRangeMilitary (TimeRange (start, end)) = 
   printTimeOfDayMilitary start <> "-" <> printTimeOfDayMilitary end 
 
+printTimeOfDayNoMod :: TimeOfDay -> Text
+printTimeOfDayNoMod = pack . formatTime defaultTimeLocale "%-l:%M"
+
 printTimeOfDay :: TimeOfDay -> Text
 printTimeOfDay = pack . formatTime defaultTimeLocale "%-l:%M%P"
 
@@ -89,14 +92,14 @@ data Schedule = Schedule
   } deriving (Generic, Show)
 
 data DayOfWeek =
-    Monday
+    Sunday
+  | Monday
   | Tuesday
   | Wednesday
   | Thursday
   | Friday
-  | Saturday
-  | Sunday
-  deriving (Generic, Show, Read, Eq, Ord, ToJSON, FromJSON)
+  | Saturday 
+  deriving (Generic, Show, Read, Eq, Enum, Ord, ToJSON, FromJSON)
 
 instance ToJSON Schedule where
   toJSON = genericToJSON defaultOptions { fieldLabelModifier = drop 1 }
