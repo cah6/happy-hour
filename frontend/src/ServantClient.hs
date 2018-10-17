@@ -1,18 +1,17 @@
-{-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE FlexibleContexts    #-}
-{-# LANGUAGE GADTs               #-}
-{-# LANGUAGE OverloadedStrings   #-}
-{-# LANGUAGE RankNTypes          #-}
-{-# LANGUAGE RecursiveDo         #-}
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TypeOperators #-}
+
 module ServantClient where
 
-import Common.Routes
+import Data.Aeson
 import Data.Proxy
-import Data.UUID
-import Reflex.Dom 
+import GHC.Generics
+import Network.HTTP.Client (newManager, defaultManagerSettings)
 import Servant.API
-import Servant.Reflex
+import Servant.Client
 
--- createHH :<|> updateHH :<|> deleteHH :<|> getHH :<|> queryHH = 
---   client hhApi (Proxy :: Proxy m) (Proxy :: Proxy ()) (constDyn (BasePath "/"))
+import Common.Dto
+import Common.Routes
+
+(createHH :<|> updateHH :<|> deleteHH :<|> getHH :<|> queryHH) = client hhApi

@@ -111,11 +111,11 @@ printDays xs = printDay (head xs) <> "-" <> printDay (last xs)
 
 printDay :: DayOfWeek -> Text 
 printDay day = case day of
-  Monday -> "M"
-  Tuesday -> "Tu"
-  Wednesday -> "W"
-  Thursday -> "Th"
-  Friday -> "F"
+  Monday -> "Mon"
+  Tuesday -> "Tue"
+  Wednesday -> "Wed"
+  Thursday -> "Thu"
+  Friday -> "Fri"
   Saturday -> "Sat"
   Sunday -> "Sun"
 

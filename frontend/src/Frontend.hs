@@ -10,8 +10,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Frontend where
 
-import Control.Monad (forM_)
-import Control.Monad.Trans (liftIO)
+import Control.Monad (forM_, join, liftM)
+import Control.Monad.Trans (liftIO, MonadIO)
+import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
+import Data.Bifunctor (first)
 import qualified Data.Map.Lazy as M
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -21,14 +23,16 @@ import Reflex.Dom.Core
 
 import Common.Dto
 import Static
+import ServantClient
 
 import Common.Routes
 import Data.Proxy
 import Data.UUID
+import Data.UUID.V4
 import Reflex.Dom 
 import Servant.API
-import Servant.Reflex
--- import Servant.Reflex.BaseUrl
+import Servant.Client
+import Servant.Reflex hiding (Http)
 
 frontend :: (StaticWidget x (), Widget x ())
 frontend = (head', body)
@@ -44,66 +48,109 @@ frontend = (head', body)
 body :: forall t m. MonadWidget t m => m ()
 body = mdo
   eHHs <- liftIO loadHHs
+  uuid <- liftIO nextRandom
+  manager <- liftIO $ newManager defaultManagerSettings
   let 
-    baseUrl = BaseFullUrl Http "localhost" 3000 "/"
-    queryHH :: Event t ()  -> m (Event t (ReqResult () [HappyHour]))
-    (createHH :<|> updateHH :<|> deleteHH :<|> getHH :<|> queryHH) = 
-      client hhApi (Proxy :: Proxy m) (Proxy :: Proxy ()) (constDyn baseUrl)
+    env = ClientEnv manager (BaseUrl Http "localhost" 3000 "")
     init = case eHHs of 
       Right a -> a
       Left err -> [defaultHH]
   started <- getPostBuild
-  eQueryResult <- queryHH started
-  dHHs <- (holdDyn init $ handleResponse <$> eQueryResult)
-  tabbedPanels dHHs
+  eQueryResult <- query env started
+  dHHs <- (holdDyn init eQueryResult)
+  eHappyHourCreated <- searchTab dHHs 
+  eRecentlyCreated <- create env eHappyHourCreated
+  return ()
 
-handleResponse :: ReqResult () [HappyHour] -> [HappyHour]
-handleResponse result = case result of 
-  ResponseSuccess _ xs _ -> xs
-  _ -> []
+create :: (PerformEvent t m, MonadWidget t m)
+  => ClientEnv
+  -> Event t HappyHour
+  -> m (Event t (Maybe UUID))
+create env event = performEvent $ ffor event $ \hh -> liftIO $ do 
+  servantResponse <- runClientM (createHH hh) env
+  case servantResponse of 
+    Left err -> return Nothing
+    Right a -> return (Just a)
 
-tabbedPanels :: MonadWidget t m => Dynamic t [HappyHour] -> m ()
-tabbedPanels xs = tabDisplay "tabs is-toggle is-fullwidth" "is-active" $ 
-  M.fromList $ zip [1..] [("Search", searchTab xs), ("Create", createTab)] 
+query :: (PerformEvent t m, MonadWidget t m)
+  => ClientEnv
+  -> Event t ()
+  -> m (Event t [HappyHour])
+query env event = performEvent $ ffor event $ \_ -> liftIO $ do 
+  servantResponse <- runClientM queryHH env
+  case servantResponse of 
+    Left err -> return []
+    Right a -> return a
 
+putDebugLnE :: MonadWidget t m => Event t a -> (a -> String) -> m ()
+putDebugLnE e mkStr = do
+    performEvent_ (liftIO . putStrLn . mkStr <$> e)
 
-searchTab :: MonadWidget t m => Dynamic t [HappyHour] -> m ()
-searchTab xs = elClass "div" "box" $ 
+  -- => Event t a
+  -- -- ^ Event to open the model
+  -- -> (a -> m (b, Event t ()))
+  -- -- ^ Widget rendering the body of the modal.  Returns an event with a
+  -- -- success value and an event triggering the close of the modal.
+  -- -> m (Dynamic t (Maybe b))
+
+searchTab :: MonadWidget t m => Dynamic t [HappyHour] -> m (Event t HappyHour)
+searchTab xs = elClass "div" "box" $ do
+  eCreate <- b_button "Create new"
+  dynMaybeHH <- removingModal eCreate createModal
+  let flattenMaybe :: (Reflex t, Show a) => Maybe (Event t a) -> Event t a
+      flattenMaybe Nothing  = never
+      flattenMaybe (Just a) = a 
+      flattened = switchDyn $ flattenMaybe <$> dynMaybeHH
   elClass "table" "table is-bordered is-striped" $ do 
     el "thead" $ 
       el "tr" $ 
         mapM_ (elAttr "th" ("scope" =: "col") . text) cols
     _ <- dyn (mkTableBody <$> xs)
     return ()
+  return flattened
+
+createModal :: MonadWidget t m => () -> m (Event t HappyHour, Event t ())
+createModal _ = do
+  elClass "div" "modal-background" $ blank
+  elClass "div" "modal-card" $ do
+    eClose <- elClass "header" "modal-card-head" $ do
+      elClass "p" "modal-card-title" $ text "Create a happy hour"
+      b_delete
+    dynHappyHour <- elClass "section" "modal-card-body" $ createFields
+    (eSubmit, eCancel) <- elClass "footer" "modal-card-foot" $ do 
+      eSubmit <- b_button "Submit"
+      eCancel <- b_button "Cancel"
+      return (eSubmit, eCancel)
+    return (tagPromptlyDyn dynHappyHour eSubmit, leftmost [eClose, eCancel, eSubmit])
 
 createTab :: MonadWidget t m => m ()
-createTab = elClass "div" "box" $ do
-  restaurant <- horizontalInput "Restaurant name:"
-  city <- horizontalInput "City name:"
-  link <- horizontalInput "Link to description:"
-  scheduleInput
-  return ()
+createTab = createFields >>= \_ -> return ()
+
+createFields :: MonadWidget t m 
+  => m (Dynamic t HappyHour)
+createFields = elClass "div" "box" $ do
+  restaurant <- _textInput_value <$> horizontalInput "Restaurant name:"
+  city <- _textInput_value <$> horizontalInput "City name:"
+  link <- _textInput_value <$> horizontalInput "Link to description:"
+  dynSchedules <- scheduleInput
+  return $ HappyHour <$> city <*> restaurant <*> dynSchedules <*> link
 
 horizontalInput :: MonadWidget t m => T.Text -> m (TextInput t)
-horizontalInput label = elAttr "div" ("class" =: "field is-horizontal") $ do
-  elClass "div" "field-label is-normal" $ 
-    elClass "label" "label" $
-      text label
-  elClass "div" "field-body" $ 
-    textInput $ def { _textInputConfig_attributes = constDyn ("class" =: "control" )}
+horizontalInput label = elAttr "div" ("class" =: "field") $ do
+  elClass "label" "label" $ text label
+  textInput $ def { _textInputConfig_attributes = constDyn ("class" =: "control" )}
 
-scheduleInput :: MonadWidget t m => m ()
-scheduleInput = elAttr "div" ("class" =: "field is-horizontal") $ do
-  elClass "div" "field-label is-normal" $ 
-    elClass "label" "label" $
-      text "Schedules"
-  elClass "div" "field-body" $ 
-    elClass "div" "tile is-ancestor" $ 
-      elClass "div" "tile is-vertical is-4 is-parent" $ mdo 
-        newBools <- foldDyn reduceScheduleCardEvent (0 =: True) (getScheduleCardEvent dynMapCardResult)
-        dynMapCardResult <- listWithKey newBools singleScheduleCard
-        return ()
-  return ()
+scheduleInput :: MonadWidget t m => m (Dynamic t [Schedule])
+scheduleInput = 
+  elClass "div" "tile is-ancestor" $ 
+    elClass "div" "tile is-vertical is-10 is-parent" $ mdo 
+      let eAdd = AddAnother <$ domEvent Click btnAddAnother
+          eScheduleChanged = leftmost $ [getScheduleCardEvent dynMapCardResult] ++ [eAdd]
+      newBools <- foldDyn reduceScheduleCardEvent (0 =: True) eScheduleChanged
+      dynMapCardResult <- listWithKey newBools singleScheduleCard
+      (btnAddAnother, _)  <- elClass' "button" "button" $ text "Add another"
+      let dynSchedules = join $ getScheduleCardSchedules <$> dynMapCardResult
+      return dynSchedules
 
 data ScheduleCardEvent = AddAnother | DeleteOne Int
 
@@ -114,34 +161,36 @@ getScheduleCardEvent input =
       dynEvent = leftmost <$> dynListEvent
   in  switchDyn dynEvent
 
+getScheduleCardSchedules :: Reflex t => (Ord k) => M.Map k (a, Dynamic t Schedule) -> Dynamic t [Schedule]
+getScheduleCardSchedules input = sequence $ (snd . snd) <$> M.toList input
+
 reduceScheduleCardEvent :: ScheduleCardEvent -> M.Map Int Bool -> M.Map Int Bool
 reduceScheduleCardEvent e xs = case e of
   AddAnother -> 
-    const False <$> xs <> (M.size xs =: True)
+    let foldF key val acc = max key acc
+        maxKey = M.foldrWithKey foldF (negate (1 :: Int)) xs
+        newKey = maxKey + 1
+    in  (const False <$> xs) <> (newKey =: True)
   DeleteOne i ->
     M.delete i xs
 
 singleScheduleCard :: MonadWidget t m => Int -> Dynamic t Bool -> m (Event t ScheduleCardEvent, Dynamic t Schedule)
-singleScheduleCard num isLast = do
-  (clicked, description) <- elClass "div" "message-header" $ do 
-    description <- textInput $ def { _textInputConfig_attributes = constDyn $ 
-            "class" =: "input has-background-grey-dark has-text-light" <> "type" =: "text" <> "placeholder" =: "Short description of deals" }
+singleScheduleCard num isLast = elClass "div" "tile is-child message" $ do
+  clicked <- elClass "div" "message-header" $ do 
+    text $ "Schedule " <> (T.pack . show) (num + 1)
     (btn, _) <- elClass' "button" "delete" $ blank
-    return $ (domEvent Click btn, _textInput_value description)
-  (days, timeRange) <- elClass "div" "message-body" $ do
+    return $ domEvent Click btn
+  schedule <- elClass "div" "message-body" $ elClass "div" "columns is-multiline" $ do
     days <- dayOfWeekBtns
     timeRange <- elClass "div" "field has-addons" $ do
-      startTime <- timeSelect
-      text " to "
-      endTime <- timeSelect
+      startTime <- elClass "div" "column is-narrow" timeSelect
+      elClass "div" "column" $ text "to"
+      endTime <- elClass "div" "column is-narrow" timeSelect
       return $ TimeRange <$> zipDyn startTime endTime
-    return (days, timeRange)
-  let cardEvent = mapCardEvent num <$> tagPromptlyDyn isLast clicked
-  return $ (AddAnother <$ clicked, Schedule <$> days <*> timeRange <*> description)
-
-mapCardEvent :: Int -> Bool -> ScheduleCardEvent
-mapCardEvent _ True = AddAnother
-mapCardEvent i False = DeleteOne i
+    description <- elClass "div" "column is-full" $ textInput $ def { _textInputConfig_attributes = constDyn $ 
+        "class" =: "input" <> "type" =: "text" <> "placeholder" =: "Short description of deals" }
+    return $ Schedule <$> days <*> timeRange <*> _textInput_value description
+  return $ (DeleteOne num <$ clicked, schedule)
 
 timeSelect :: MonadWidget t m => m (Dynamic t TimeOfDay)
 timeSelect = 
@@ -187,7 +236,7 @@ amPmMap :: M.Map AmPm T.Text
 amPmMap = M.fromList [(AM, "am"), (PM, "pm")]
 
 dayOfWeekBtns :: MonadWidget t m => m (Dynamic t [DayOfWeek])
-dayOfWeekBtns = elClass "div" "buttons has-addons" $ do
+dayOfWeekBtns = elClass "div" "column is-full" $ elClass "div" "buttons has-addons is-centered" $ do
   days <- mapM singleDayBtn [Sunday .. Saturday]
   return (mapBtnState <$> sequence days)
 
@@ -242,3 +291,42 @@ row :: MonadWidget t m
   => [m a]
   -> m ()
 row xs = el "tr" $ mapM_ (el "td") xs
+
+b_button :: MonadWidget t m => T.Text -> m (Event t ())
+b_button s = do
+  (e, _) <- elClass' "button" "button" $ text s
+  return $ domEvent Click e
+
+b_delete :: MonadWidget t m => m (Event t ())
+b_delete = do 
+  (e, _) <- elClass' "button" "delete" $ blank
+  return $ domEvent Click e
+
+removingModal
+  :: MonadWidget t m
+  => Event t a
+  -- ^ Event to open the model
+  -> (a -> m (b, Event t ()))
+  -- ^ Widget rendering the body of the modal.  Returns an event with a
+  -- success value and an event triggering the close of the modal.
+  -> m (Dynamic t (Maybe b))
+removingModal showm body = do
+    rec let visE = leftmost [Just <$> showm, Nothing <$ closem]
+        res <- widgetHold (removeFromDOMWrapper Nothing) (removeFromDOMWrapper <$> visE)
+        let resE = fst <$> res
+            closem = switchDyn $ snd <$> res
+    return resE
+  where
+    removeFromDOMWrapper Nothing = return (Nothing, never)
+    removeFromDOMWrapper (Just a) =
+      elClass "div" "modal is-active" $
+        first Just <$> body a
+
+
+widgetHoldHelper
+    :: MonadWidget t m
+    => (a -> m b)
+    -> a
+    -> Event t a
+    -> m (Dynamic t b)
+widgetHoldHelper f eDef e = widgetHold (f eDef) (f <$> e)

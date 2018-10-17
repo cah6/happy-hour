@@ -19,10 +19,11 @@ executable frontend
   main-is: main.hs
   hs-source-dirs: src
   build-depends: base
+               , bifunctors
                , common
                , containers
                , reflex-dom
-               -- , servant-client
+               , servant-client
                , servant-reflex
                , static
                , text
