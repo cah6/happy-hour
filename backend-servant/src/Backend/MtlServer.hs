@@ -1,4 +1,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 module Backend.MtlServer where
 
 import qualified Data.ByteString.Lazy as B

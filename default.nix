@@ -8,4 +8,7 @@ project ./. ({ pkgs, ... }: {
   ios.bundleIdentifier = "systems.obsidian.obelisk.examples.minimal";
   ios.bundleName = "Obelisk Minimal Example";
 
+  overrides = self: super: {
+    google-maps-reflex = super.callPackage ./google-maps-reflex.nix { };
+  };
 })

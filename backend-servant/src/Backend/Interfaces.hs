@@ -2,6 +2,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE TypeFamilies #-}
 module Backend.Interfaces where
 
 import Control.Monad.Except (ExceptT)

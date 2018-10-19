@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE UndecidableInstances #-}
 module Backend.Setup where
 
@@ -12,7 +14,8 @@ import Data.String (IsString)
 import Database.Beam
 import Database.Beam.Postgres
 import GHC.Generics
-import Network.HTTP.Client (newManager, defaultManagerSettings)
+import Network.Connection (TLSSettings(..))
+import Network.HTTP.Client.TLS (mkManagerSettings, newTlsManagerWith, tlsManagerSettings)
 import Network.Wai
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.Cors (simpleCors)
@@ -68,8 +71,10 @@ nt (MyApp m) = do
 
 provideEnv :: IO BHEnv
 provideEnv = do
-  manager <- newManager defaultManagerSettings
-  return $ mkBHEnv (Server "http://localhost:9200") manager
+  manager <- newTlsManagerWith tlsSettings -- tlsManagerSettings
+  return $ mkBHEnv (Server "https://localhost:9200") manager
+    where
+  tlsSettings = mkManagerSettings (TLSSettingsSimple True True True) Nothing
 
 server :: ServerT HappyHourApi MyApp
 server = createHH :<|> updateHH :<|> deleteHH :<|> getHH :<|> queryHHs

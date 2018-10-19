@@ -11,7 +11,7 @@
 module Frontend where
 
 import Control.Monad (forM_, join, liftM)
-import Control.Monad.Trans (liftIO, MonadIO)
+import Control.Monad.Trans (liftIO)
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import Data.Bifunctor (first)
 import qualified Data.Map.Lazy as M
@@ -26,13 +26,12 @@ import Static
 import ServantClient
 
 import Common.Routes
-import Data.Proxy
 import Data.UUID
 import Data.UUID.V4
 import Reflex.Dom 
 import Servant.API
 import Servant.Client
-import Servant.Reflex hiding (Http)
+import qualified GoogleMapsReflex as G
 
 frontend :: (StaticWidget x (), Widget x ())
 frontend = (head', body)
@@ -56,42 +55,11 @@ body = mdo
       Right a -> a
       Left err -> [defaultHH]
   started <- getPostBuild
-  eQueryResult <- query env started
+  eQueryResult <- queryHH env started
   dHHs <- (holdDyn init eQueryResult)
   eHappyHourCreated <- searchTab dHHs 
-  eRecentlyCreated <- create env eHappyHourCreated
+  eRecentlyCreated <- createHH env eHappyHourCreated
   return ()
-
-create :: (PerformEvent t m, MonadWidget t m)
-  => ClientEnv
-  -> Event t HappyHour
-  -> m (Event t (Maybe UUID))
-create env event = performEvent $ ffor event $ \hh -> liftIO $ do 
-  servantResponse <- runClientM (createHH hh) env
-  case servantResponse of 
-    Left err -> return Nothing
-    Right a -> return (Just a)
-
-query :: (PerformEvent t m, MonadWidget t m)
-  => ClientEnv
-  -> Event t ()
-  -> m (Event t [HappyHour])
-query env event = performEvent $ ffor event $ \_ -> liftIO $ do 
-  servantResponse <- runClientM queryHH env
-  case servantResponse of 
-    Left err -> return []
-    Right a -> return a
-
-putDebugLnE :: MonadWidget t m => Event t a -> (a -> String) -> m ()
-putDebugLnE e mkStr = do
-    performEvent_ (liftIO . putStrLn . mkStr <$> e)
-
-  -- => Event t a
-  -- -- ^ Event to open the model
-  -- -> (a -> m (b, Event t ()))
-  -- -- ^ Widget rendering the body of the modal.  Returns an event with a
-  -- -- success value and an event triggering the close of the modal.
-  -- -> m (Dynamic t (Maybe b))
 
 searchTab :: MonadWidget t m => Dynamic t [HappyHour] -> m (Event t HappyHour)
 searchTab xs = elClass "div" "box" $ do
@@ -107,7 +75,42 @@ searchTab xs = elClass "div" "box" $ do
         mapM_ (elAttr "th" ("scope" =: "col") . text) cols
     _ <- dyn (mkTableBody <$> xs)
     return ()
+  elAttr "iframe" (
+        "width" =: "600"
+    <> "height" =: "450"
+    <> "frameborder" =: "0"
+    <> "style" =: "border:0"
+    <> "src" =: "https://www.google.com/maps/embed/v1/place?key=AIzaSyDxM3_sjDAP1kDHzbRMkZ6Ky7BYouXfVOs&q=place_id:ChIJMSuIlbnSJIgRbUFj__-VGdA&q=ChIJMUfEOWEtO4gRddDKWmgPMpI"
+    -- <> "src" =: "https://www.google.com/maps/d/u/0/embed?mid=1GzNnqZVd3ZTAlf_Eel06jpAB_oqQMXv8&q=ChIJMSuIlbnSJIgRbUFj__-VGdA"
+    -- <> "src" =: "https://maps.googleapis.com/maps/api/staticmap?center=Brooklyn+Bridge,New+York,NY&zoom=13&size=600x300&maptype=roadmap&markers=color:blue%7Clabel:S%7C40.702147,-74.015794&markers=color:green%7Clabel:GAD%7C40.711614,-74.012318&key=AIzaSyDxM3_sjDAP1kDHzbRMkZ6Ky7BYouXfVOs"
+    ) blank
+  -- pb <- getPostBuild >>= delay 0.1
+  -- configDyn <- holdDyn config (config <$ pb)
+  -- (Element _ mapEl, _) <- elAttr' "div" ("style" =: "width: 500px; height: 300px;") blank
+  -- maps <- G.googleMaps mapEl (G.ApiKey "AIzaSyDxM3_sjDAP1kDHzbRMkZ6Ky7BYouXfVOs") configDyn
   return flattened
+
+config :: G.Config Int
+config = def {
+    G._config_markers = 
+      0 =: def {
+        G._markerOptions_position = G.LatLng 42.21103 (-83.03438),
+        G._markerOptions_title = "The Whitney",
+        G._markerOptions_animation = Just G.Drop
+      }
+  , G._config_infoWindows = 
+      0 =: G.InfoWindowState {
+          _infoWindowState_options = G.InfoWindowOptions {
+              _infoWindowOptions_content = G.ContentText "The Whitney"
+            , _infoWindowOptions_disableAutoPan = True
+            , _infoWindowOptions_maxWidth = 100
+            , _infoWindowOptions_pixelOffset = G.Size 0 0 Nothing Nothing
+            , _infoWindowOptions_position = G.LatLng 42.21103 (-83.03438) -- 42.21103 83.03438
+            , _infoWindowOptions_zIndex = 0
+          }
+        , _infoWindowState_open = True
+      }
+}
 
 createModal :: MonadWidget t m => () -> m (Event t HappyHour, Event t ())
 createModal _ = do
@@ -197,7 +200,11 @@ timeSelect =
   elClass "div" "field has-addons" $ do
     dynTimeOfDay <- timeOfDaySelect
     dynAmPm <- amPmSelect
-    return dynTimeOfDay
+    return $ zipDynWith adjustTime dynAmPm dynTimeOfDay
+
+adjustTime :: AmPm -> TimeOfDay -> TimeOfDay
+adjustTime AM tod = tod
+adjustTime PM (TimeOfDay h m s) = TimeOfDay (h + 12) m s
 
 timeOfDaySelect :: MonadWidget t m => m (Dynamic t TimeOfDay)
 timeOfDaySelect = 
@@ -322,11 +329,8 @@ removingModal showm body = do
       elClass "div" "modal is-active" $
         first Just <$> body a
 
+-- Utils
 
-widgetHoldHelper
-    :: MonadWidget t m
-    => (a -> m b)
-    -> a
-    -> Event t a
-    -> m (Dynamic t b)
-widgetHoldHelper f eDef e = widgetHold (f eDef) (f <$> e)
+putDebugLnE :: MonadWidget t m => Event t a -> (a -> String) -> m ()
+putDebugLnE e mkStr = do
+    performEvent_ (liftIO . putStrLn . mkStr <$> e)

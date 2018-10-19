@@ -24,10 +24,12 @@ executable backend-servant
                     , bloodhound
                     , bytestring
                     , common
+                    , connection
                     , containers
                     , directory
                     , elm-export
                     , http-client
+                    , http-client-tls
                     , lens
                     , lens-aeson
                     , monad-logger
