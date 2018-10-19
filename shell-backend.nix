@@ -6,7 +6,7 @@ let
   # elmPkgs = import ./pkgs-from-json.nix { json = ./nixos-18-03.json; };
   myPackages = (import ./release.nix { withHoogle = true; } );
 
-  projectDrvEnv = myPackages.project1.env.overrideAttrs (oldAttrs: rec {
+  projectDrvEnv = myPackages.backend-servant.env.overrideAttrs (oldAttrs: rec {
     buildInputs = oldAttrs.buildInputs ++ [ 
       pinnedPkgs.haskellPackages.hlint
       pinnedPkgs.haskellPackages.cabal-install

@@ -6,12 +6,19 @@ build-type: Simple
 library
   hs-source-dirs: src
   build-depends: base
+               , aeson
                , common
                , containers
                , google-maps-reflex
+               , http-client
+               , mtl
+               , servant
+               , servant-client
                , reflex-dom
                , static
                , text
+               , time
+               , uuid
   exposed-modules:
     Frontend
   ghc-options: -Wall
@@ -20,16 +27,22 @@ executable frontend
   main-is: main.hs
   hs-source-dirs: src
   build-depends: base
+               , aeson
                , bifunctors
                , common
                , containers
                , google-maps-reflex
+               , http-client
+               , mtl
                , reflex-dom
+               , servant
                , servant-client
                , servant-reflex
                , static
                , text
+               , time 
                , frontend
+               , uuid
   --TODO: Make these ghc-options optional
   ghc-options: -threaded
   if os(darwin)

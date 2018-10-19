@@ -1,23 +1,23 @@
 {
   network.description = "Happy hour servers";
 
-  happy-hour =
+  backend1 =
     { config, pkgs, ... }: 
     let
-      happy-hour = (import ./release.nix {}).project1;
+      backend-servant = (import ./release.nix {}).backend-servant;
     in
     { 
-      networking.hostName = "happy-hour";
+      networking.hostName = "backend1";
 
       networking.firewall.allowedTCPPorts = [ 22 80 3000 ];
-      environment.systemPackages = [ happy-hour ];
+      environment.systemPackages = [ backend-servant ];
 
-      systemd.services.happy-hour =
+      systemd.services.backend-servant =
         { description = "Happy Hour Webserver";
           wantedBy = [ "multi-user.target" ];
           after = [ "network.target" ];
           serviceConfig =
-            { ExecStart = "${happy-hour}/bin/happy-hour-backend";
+            { ExecStart = "${backend-servant}/bin/backend-servant";
             };
         };
     };

@@ -15,5 +15,5 @@ let
   hoogleAugmentedPackages = import ./toggle-hoogle.nix { withHoogle = withHoogle; input = customHaskellPackages; };
 
 in
-  { project1 = hoogleAugmentedPackages.backend-servant;
+  { backend-servant = hoogleAugmentedPackages.backend-servant;
   }

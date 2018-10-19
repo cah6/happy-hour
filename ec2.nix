@@ -1,6 +1,6 @@
 let
   region = "us-east-1";
-  accessKeyId = "happy-hour";
+  accessKeyId = "hhkey";
 in
 { 
   backend1 = { resources, ... }:
@@ -10,7 +10,8 @@ in
       deployment.ec2.region = region;
       deployment.ec2.subnetId = "subnet-5bf9af77";
       deployment.ec2.instanceType = "t2.micro";
-      deployment.ec2.keyPair = resources.ec2KeyPairs.my-free-tier;
+      deployment.ec2.associatePublicIpAddress = true;
+      deployment.ec2.keyPair = "my-free-tier";
+      deployment.ec2.privateKey = "~/.ssh/my-free-tier.pem";
     };
-  resources.ec2KeyPairs.my-free-tier = { inherit region accessKeyId; };
 }

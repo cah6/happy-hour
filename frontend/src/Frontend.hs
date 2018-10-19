@@ -33,7 +33,7 @@ import Servant.API
 import Servant.Client
 import qualified GoogleMapsReflex as G
 
-frontend :: (StaticWidget x (), Widget x ())
+frontend :: (Widget x (), Widget x ())
 frontend = (head', body)
   where
     head' = do
