@@ -14,6 +14,8 @@ library
                 , bytestring
                 , containers
                 , directory
+                , obelisk-route
+                , mtl
                 , servant
                 , text
                 , time
@@ -23,6 +25,7 @@ library
   exposed-modules:
     Common.Dto
     Common.Helper
+    Common.Route
     Common.Routes
   default-extensions:
     DataKinds

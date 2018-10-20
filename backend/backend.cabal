@@ -2,8 +2,6 @@ name: backend
 version: 0.1
 cabal-version: >= 1.8
 build-type: Simple
-license: BSD3
-license-file: LICENSE
 
 library
   hs-source-dirs: src
@@ -13,22 +11,18 @@ library
                , common
                , frontend
                , obelisk-backend
+               , obelisk-route
   exposed-modules:
     Backend
   ghc-options: -Wall
 
 executable backend
   main-is: main.hs
-  hs-source-dirs: src
+  hs-source-dirs: src-bin
   if impl(ghcjs)
     buildable: False
   build-depends: base
                , backend
                , common
                , frontend
-               , lens
-               , modern-uri
                , obelisk-backend
-               , obelisk-executable-config
-               , obelisk-executable-config-inject
-               , text

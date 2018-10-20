@@ -31,18 +31,30 @@ import Data.UUID.V4
 import Reflex.Dom 
 import Servant.API
 import Servant.Client
-import qualified GoogleMapsReflex as G
 
-frontend :: (Widget x (), Widget x ())
-frontend = (head', body)
-  where
-    head' = do
-      el "title" $ text "Happy Hours"
+frontend :: Frontend (R FrontendRoute)
+frontend = Frontend
+  { _frontend_head = do 
+      el "title" $ text "Obelisk Minimal Example"
       elAttr "link" ("href" =: "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css" 
                   <> "rel" =: "stylesheet" 
                   <> "type" =: "text/css"
                   ) blank
       return ()
+  , _frontend_body = body
+  }
+
+
+-- frontend :: (Widget x (), Widget x ())
+-- frontend = (head', body)
+--   where
+--     head' = do
+--       el "title" $ text "Happy Hours"
+--       elAttr "link" ("href" =: "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css" 
+--                   <> "rel" =: "stylesheet" 
+--                   <> "type" =: "text/css"
+--                   ) blank
+--       return ()
 
 body :: forall t m. MonadWidget t m => m ()
 body = mdo
@@ -90,27 +102,27 @@ searchTab xs = elClass "div" "box" $ do
   -- maps <- G.googleMaps mapEl (G.ApiKey "AIzaSyDxM3_sjDAP1kDHzbRMkZ6Ky7BYouXfVOs") configDyn
   return flattened
 
-config :: G.Config Int
-config = def {
-    G._config_markers = 
-      0 =: def {
-        G._markerOptions_position = G.LatLng 42.21103 (-83.03438),
-        G._markerOptions_title = "The Whitney",
-        G._markerOptions_animation = Just G.Drop
-      }
-  , G._config_infoWindows = 
-      0 =: G.InfoWindowState {
-          _infoWindowState_options = G.InfoWindowOptions {
-              _infoWindowOptions_content = G.ContentText "The Whitney"
-            , _infoWindowOptions_disableAutoPan = True
-            , _infoWindowOptions_maxWidth = 100
-            , _infoWindowOptions_pixelOffset = G.Size 0 0 Nothing Nothing
-            , _infoWindowOptions_position = G.LatLng 42.21103 (-83.03438) -- 42.21103 83.03438
-            , _infoWindowOptions_zIndex = 0
-          }
-        , _infoWindowState_open = True
-      }
-}
+-- config :: G.Config Int
+-- config = def {
+--     G._config_markers = 
+--       0 =: def {
+--         G._markerOptions_position = G.LatLng 42.21103 (-83.03438),
+--         G._markerOptions_title = "The Whitney",
+--         G._markerOptions_animation = Just G.Drop
+--       }
+--   , G._config_infoWindows = 
+--       0 =: G.InfoWindowState {
+--           _infoWindowState_options = G.InfoWindowOptions {
+--               _infoWindowOptions_content = G.ContentText "The Whitney"
+--             , _infoWindowOptions_disableAutoPan = True
+--             , _infoWindowOptions_maxWidth = 100
+--             , _infoWindowOptions_pixelOffset = G.Size 0 0 Nothing Nothing
+--             , _infoWindowOptions_position = G.LatLng 42.21103 (-83.03438) -- 42.21103 83.03438
+--             , _infoWindowOptions_zIndex = 0
+--           }
+--         , _infoWindowState_open = True
+--       }
+-- }
 
 createModal :: MonadWidget t m => () -> m (Event t HappyHour, Event t ())
 createModal _ = do
