@@ -15,12 +15,14 @@ library
                , obelisk-route
                , mtl
                , servant
-               , servant-client
                , reflex-dom
-               , static
                , text
                , time
                , uuid
+  if impl(ghcjs)
+    build-depends: servant-client-ghcjs
+  else 
+    build-depends: servant-client
   exposed-modules:
     Frontend
     ServantClient
@@ -30,6 +32,7 @@ executable frontend
   main-is: main.hs
   hs-source-dirs: src-bin
   build-depends: base
+               , frontend
                , aeson
                , bifunctors
                , common
@@ -41,13 +44,13 @@ executable frontend
                , mtl
                , reflex-dom
                , servant
-               , servant-client
-               , servant-reflex
-               , static
                , text
-               , time 
-               , frontend
+               , time
                , uuid
+  if impl(ghcjs)
+    build-depends: servant-client-ghcjs
+  else 
+    build-depends: servant-client
   --TODO: Make these ghc-options optional
   ghc-options: -threaded
   if os(darwin)

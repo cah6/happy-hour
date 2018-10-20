@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -18,13 +19,16 @@ import qualified Data.Map.Lazy as M
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import Data.Time
+import Obelisk.Frontend
+import Obelisk.Route
+import Obelisk.Generated.Static
 import Reflex.Dom 
 import Reflex.Dom.Core
 
 import Common.Dto
-import Static
 import ServantClient
 
+import Common.Route
 import Common.Routes
 import Data.UUID
 import Data.UUID.V4
@@ -35,13 +39,13 @@ import Servant.Client
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
   { _frontend_head = do 
-      el "title" $ text "Obelisk Minimal Example"
+      el "title" $ text "Happy Hours"
       elAttr "link" ("href" =: "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css" 
                   <> "rel" =: "stylesheet" 
                   <> "type" =: "text/css"
                   ) blank
       return ()
-  , _frontend_body = body
+  , _frontend_body = prerender blank body 
   }
 
 
@@ -62,7 +66,7 @@ body = mdo
   uuid <- liftIO nextRandom
   manager <- liftIO $ newManager defaultManagerSettings
   let 
-    env = ClientEnv manager (BaseUrl Http "localhost" 3000 "")
+    env = ClientEnv manager (BaseUrl Http "localhost" 3000 "") Nothing
     init = case eHHs of 
       Right a -> a
       Left err -> [defaultHH]
