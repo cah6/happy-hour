@@ -55,10 +55,10 @@ body = mdo
       Right a -> a
       Left err -> [defaultHH]
   started <- getPostBuild
-  eQueryResult <- queryHH env started
+  eQueryResult <- restQueryHH env started
   dHHs <- (holdDyn init eQueryResult)
   eHappyHourCreated <- searchTab dHHs 
-  eRecentlyCreated <- createHH env eHappyHourCreated
+  eRecentlyCreated <- restCreateHH env eHappyHourCreated
   return ()
 
 searchTab :: MonadWidget t m => Dynamic t [HappyHour] -> m (Event t HappyHour)

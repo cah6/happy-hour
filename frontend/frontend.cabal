@@ -21,6 +21,7 @@ library
                , uuid
   exposed-modules:
     Frontend
+    ServantClient
   ghc-options: -Wall
 
 executable frontend
