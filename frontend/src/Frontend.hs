@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -34,7 +35,12 @@ import Data.UUID
 import Data.UUID.V4
 import Reflex.Dom 
 import Servant.API
-import Servant.Client
+
+#ifdef ghcjs_HOST_OS
+import Servant.Client.Ghcjs (ClientEnv(..), BaseUrl(..), Scheme(..))
+#else
+import Servant.Client (ClientEnv(..), BaseUrl(..), Scheme(..))
+#endif
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
@@ -45,7 +51,7 @@ frontend = Frontend
                   <> "type" =: "text/css"
                   ) blank
       return ()
-  , _frontend_body = prerender blank body 
+  , _frontend_body = prerender (text "Loading...") body 
   }
 
 
@@ -60,13 +66,20 @@ frontend = Frontend
 --                   ) blank
 --       return ()
 
+mkEnv :: Manager -> ClientEnv
+#ifdef ghcjs_HOST_OS
+mkEnv manager = ClientEnv (BaseUrl Http "localhost" 3000 "")
+#else
+mkEnv manager = ClientEnv manager (BaseUrl Http "localhost" 3000 "") Nothing
+#endif
+
 body :: forall t m. MonadWidget t m => m ()
 body = mdo
   eHHs <- liftIO loadHHs
   uuid <- liftIO nextRandom
   manager <- liftIO $ newManager defaultManagerSettings
   let 
-    env = ClientEnv manager (BaseUrl Http "localhost" 3000 "") Nothing
+    env = mkEnv manager
     init = case eHHs of 
       Right a -> a
       Left err -> [defaultHH]
