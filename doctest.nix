@@ -2,7 +2,7 @@
 mkDerivation {
   pname = "doctest";
   version = "0.15.0";
-  src = ./.;
+  src = ./doctest;
   isLibrary = true;
   isExecutable = true;
   libraryHaskellDepends = [ base ];
