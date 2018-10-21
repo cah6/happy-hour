@@ -6,7 +6,7 @@
 mkDerivation {
   pname = "servant-client-ghcjs";
   version = "0.14";
-  src = ../servant/servant-client-ghcjs;
+  src = ./servant-client-ghcjs;
   libraryHaskellDepends = [
     base bytestring case-insensitive containers exceptions ghcjs-base
     ghcjs-prim http-media http-types monad-control mtl semigroupoids
