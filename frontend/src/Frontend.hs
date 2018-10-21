@@ -68,9 +68,9 @@ frontend = Frontend
 
 mkEnv :: Manager -> ClientEnv
 #ifdef ghcjs_HOST_OS
-mkEnv manager = ClientEnv (BaseUrl Http "localhost" 3000 "")
+mkEnv manager = ClientEnv (BaseUrl Http "34.203.246.5" 3000 "")
 #else
-mkEnv manager = ClientEnv manager (BaseUrl Http "localhost" 3000 "") Nothing
+mkEnv manager = ClientEnv manager (BaseUrl Http "34.203.246.5" 3000 "") Nothing
 #endif
 
 body :: forall t m. MonadWidget t m => m ()
