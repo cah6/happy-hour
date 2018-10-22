@@ -13,5 +13,6 @@ project ./. ({ pkgs, ... }: {
     http-media = pkgs.haskell.lib.dontCheck super.http-media;
     servant = pkgs.haskell.lib.dontCheck super.servant;
     doctest = self.callPackage ./doctest.nix { };
+    # servant-reflex = self.callPackage ./servant-reflex.nix { };
   };
 })

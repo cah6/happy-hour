@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
@@ -29,7 +30,7 @@ import Data.Proxy
 apiClients :: forall t m. (MonadWidget t m) => _
 apiClients = client hhApi (Proxy @m) (Proxy @()) (constDyn url)
   where url :: BaseUrl
-        url = BaseFullUrl Http "localhost" 3000 "/"
+        url = BaseFullUrl Http "34.203.246.5" 3000 "/"
 
 createHH :: MonadWidget t m 
   => Dynamic t (Either T.Text HappyHour) 

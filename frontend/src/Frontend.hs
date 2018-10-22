@@ -36,6 +36,9 @@ import Data.UUID.V4
 import Reflex.Dom 
 import Servant.API
 
+-- import ServantReflexClient
+-- import Servant.Reflex hiding (Http)
+
 #ifdef ghcjs_HOST_OS
 import Servant.Client.Ghcjs (ClientEnv(..), BaseUrl(..), Scheme(..))
 #else
@@ -53,18 +56,6 @@ frontend = Frontend
       return ()
   , _frontend_body = prerender (text "Loading...") body 
   }
-
-
--- frontend :: (Widget x (), Widget x ())
--- frontend = (head', body)
---   where
---     head' = do
---       el "title" $ text "Happy Hours"
---       elAttr "link" ("href" =: "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css" 
---                   <> "rel" =: "stylesheet" 
---                   <> "type" =: "text/css"
---                   ) blank
---       return ()
 
 mkEnv :: Manager -> ClientEnv
 #ifdef ghcjs_HOST_OS
@@ -90,6 +81,49 @@ body = mdo
   eRecentlyCreated <- restCreateHH env eHappyHourCreated
   return ()
 
+-- body :: forall t m. MonadWidget t m => m ()
+-- body = mdo
+--   eHHs <- liftIO loadHHs
+--   uuid <- liftIO nextRandom
+--   manager <- liftIO $ newManager defaultManagerSettings
+--   let 
+--     env = mkEnv manager
+--     init = case eHHs of 
+--       Right a -> a
+--       Left err -> [defaultHH]
+--   started <- getPostBuild
+--   eQueryResult <- queryHH started
+--   let eQueryHHs = handleResponse <$> eQueryResult
+--   dHHs <- (holdDyn init eQueryHHs)
+--   eHappyHourCreated <- searchTab dHHs 
+--   dHappyHourCreated <- holdDyn defaultHH eHappyHourCreated
+--   eRecentlyCreated <- traceEventWith showReqResult <$> createHH (Right <$> dHappyHourCreated) (() <$ eHappyHourCreated)
+--   return ()
+
+-- body :: forall t m. MonadWidget t m => m ()
+-- body = mdo
+--   eHHs <- liftIO loadHHs
+--   uuid <- liftIO nextRandom
+--   manager <- liftIO $ newManager defaultManagerSettings
+--   let 
+--     env = mkEnv manager
+--     init = case eHHs of 
+--       Right a -> a
+--       Left err -> [defaultHH]
+--   started <- getPostBuild
+--   eQueryResult <- queryHH started
+--   let eQueryHHs = handleResponse <$> eQueryResult
+--   dHHs <- (holdDyn init eQueryHHs)
+--   eHappyHourCreated <- searchTab dHHs 
+--   dHappyHourCreated <- holdDyn defaultHH eHappyHourCreated
+--   eRecentlyCreated <- traceEventWith showReqResult <$> createHH (Right <$> dHappyHourCreated) (() <$ eHappyHourCreated)
+--   return ()
+
+-- handleResponse :: ReqResult () [HappyHour] -> [HappyHour]
+-- handleResponse result = case result of 	
+--   ResponseSuccess _ xs _ -> xs	
+--   _ -> []
+
 searchTab :: MonadWidget t m => Dynamic t [HappyHour] -> m (Event t HappyHour)
 searchTab xs = elClass "div" "box" $ do
   eCreate <- b_button "Create new"
@@ -110,36 +144,8 @@ searchTab xs = elClass "div" "box" $ do
     <> "frameborder" =: "0"
     <> "style" =: "border:0"
     <> "src" =: "https://www.google.com/maps/embed/v1/place?key=AIzaSyDxM3_sjDAP1kDHzbRMkZ6Ky7BYouXfVOs&q=place_id:ChIJMSuIlbnSJIgRbUFj__-VGdA&q=ChIJMUfEOWEtO4gRddDKWmgPMpI"
-    -- <> "src" =: "https://www.google.com/maps/d/u/0/embed?mid=1GzNnqZVd3ZTAlf_Eel06jpAB_oqQMXv8&q=ChIJMSuIlbnSJIgRbUFj__-VGdA"
-    -- <> "src" =: "https://maps.googleapis.com/maps/api/staticmap?center=Brooklyn+Bridge,New+York,NY&zoom=13&size=600x300&maptype=roadmap&markers=color:blue%7Clabel:S%7C40.702147,-74.015794&markers=color:green%7Clabel:GAD%7C40.711614,-74.012318&key=AIzaSyDxM3_sjDAP1kDHzbRMkZ6Ky7BYouXfVOs"
     ) blank
-  -- pb <- getPostBuild >>= delay 0.1
-  -- configDyn <- holdDyn config (config <$ pb)
-  -- (Element _ mapEl, _) <- elAttr' "div" ("style" =: "width: 500px; height: 300px;") blank
-  -- maps <- G.googleMaps mapEl (G.ApiKey "AIzaSyDxM3_sjDAP1kDHzbRMkZ6Ky7BYouXfVOs") configDyn
   return flattened
-
--- config :: G.Config Int
--- config = def {
---     G._config_markers = 
---       0 =: def {
---         G._markerOptions_position = G.LatLng 42.21103 (-83.03438),
---         G._markerOptions_title = "The Whitney",
---         G._markerOptions_animation = Just G.Drop
---       }
---   , G._config_infoWindows = 
---       0 =: G.InfoWindowState {
---           _infoWindowState_options = G.InfoWindowOptions {
---               _infoWindowOptions_content = G.ContentText "The Whitney"
---             , _infoWindowOptions_disableAutoPan = True
---             , _infoWindowOptions_maxWidth = 100
---             , _infoWindowOptions_pixelOffset = G.Size 0 0 Nothing Nothing
---             , _infoWindowOptions_position = G.LatLng 42.21103 (-83.03438) -- 42.21103 83.03438
---             , _infoWindowOptions_zIndex = 0
---           }
---         , _infoWindowState_open = True
---       }
--- }
 
 createModal :: MonadWidget t m => () -> m (Event t HappyHour, Event t ())
 createModal _ = do
