@@ -66,17 +66,13 @@ mkEnv manager = ClientEnv manager (BaseUrl Http "172.31.86.59" 3000 "") Nothing
 
 body :: forall t m. MonadWidget t m => m ()
 body = mdo
-  eHHs <- liftIO loadHHs
   uuid <- liftIO nextRandom
   manager <- liftIO $ newManager defaultManagerSettings
   let 
     env = mkEnv manager
-    init = case eHHs of 
-      Right a -> a
-      Left err -> [defaultHH]
   started <- getPostBuild
   eQueryResult <- restQueryHH env started
-  dHHs <- (holdDyn init eQueryResult)
+  dHHs <- (holdDyn [defaultHH] eQueryResult)
   eHappyHourCreated <- searchTab dHHs 
   eRecentlyCreated <- restCreateHH env eHappyHourCreated
   return ()
