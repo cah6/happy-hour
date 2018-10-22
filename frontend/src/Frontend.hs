@@ -59,21 +59,20 @@ frontend = Frontend
 
 mkEnv :: Manager -> ClientEnv
 #ifdef ghcjs_HOST_OS
-mkEnv manager = ClientEnv (BaseUrl Http "172.31.86.59" 3000 "")
+mkEnv manager = ClientEnv (BaseUrl Http "52.87.157.165" 3000 "")
 #else
-mkEnv manager = ClientEnv manager (BaseUrl Http "172.31.86.59" 3000 "") Nothing
+mkEnv manager = ClientEnv manager (BaseUrl Http "52.87.157.165" 3000 "") Nothing
 #endif
 
 body :: forall t m. MonadWidget t m => m ()
 body = mdo
-  uuid <- liftIO nextRandom
   manager <- liftIO $ newManager defaultManagerSettings
   let 
     env = mkEnv manager
   started <- getPostBuild
   eQueryResult <- restQueryHH env started
-  dHHs <- (holdDyn [defaultHH] eQueryResult)
-  eHappyHourCreated <- searchTab dHHs 
+  dHHs <- holdDyn [defaultHH] eQueryResult
+  eHappyHourCreated <- searchTab dHHs
   eRecentlyCreated <- restCreateHH env eHappyHourCreated
   return ()
 
