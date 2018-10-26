@@ -33,15 +33,7 @@ import Servant.API
 
 import Common.Dto
 import Common.Route
--- import Common.ServantClient
 import ServantReflexClient
-
-
--- #ifdef ghcjs_HOST_OS
--- import Servant.Client.Ghcjs (ClientEnv(..), BaseUrl(..), Scheme(..))
--- #else
--- import Servant.Client (ClientEnv(..), BaseUrl(..), Scheme(..))
--- #endif
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
@@ -54,13 +46,6 @@ frontend = Frontend
       return ()
   , _frontend_body = prerender (text "Loading...") body 
   }
-
--- mkEnv :: Manager -> ClientEnv
--- #ifdef ghcjs_HOST_OS
--- mkEnv manager = ClientEnv (BaseUrl Http "52.87.157.165" 3000 "")
--- #else
--- mkEnv manager = ClientEnv manager (BaseUrl Http "52.87.157.165" 3000 "") Nothing
--- #endif
 
 body :: forall t m. MonadWidget t m => m ()
 body = mdo

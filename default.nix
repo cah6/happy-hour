@@ -9,7 +9,6 @@ project ./. ({ pkgs, ... }: {
   ios.bundleName = "Obelisk Minimal Example";
 
   overrides = self: super: {
-    servant-client-ghcjs = pkgs.haskell.lib.doJailbreak (self.callPackage ./servant-client-ghcjs.nix { });
     http-media = pkgs.haskell.lib.dontCheck super.http-media;
     servant = pkgs.haskell.lib.dontCheck super.servant;
     doctest = self.callPackage ./doctest.nix { };

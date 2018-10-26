@@ -21,10 +21,6 @@ library
                , text
                , time
                , uuid
-  if impl(ghcjs)
-    build-depends: servant-client-ghcjs
-  else 
-    build-depends: servant-client
   exposed-modules:
     Frontend
     ServantReflexClient
@@ -51,10 +47,6 @@ executable frontend
                , text
                , time
                , uuid
-  if impl(ghcjs)
-    build-depends: servant-client-ghcjs
-  else 
-    build-depends: servant-client
   --TODO: Make these ghc-options optional
   ghc-options: -threaded
   if os(darwin)
