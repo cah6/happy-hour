@@ -23,10 +23,9 @@ import Servant.Client (runClientM, client, ClientEnv(..))
 import Reflex.Dom.Core
 
 import Common.Dto
-import Common.Routes
+import Common.ServantRoutes
 
--- (createHH' :<|> updateHH' :<|> deleteHH' :<|> getHH' :<|> queryHH') = client hhApi
-(createHH' :<|> queryHH') = client hhApi
+(createHH' :<|> updateHH' :<|> deleteHH' :<|> getHH' :<|> queryHH') = client hhApi
 
 #ifdef ghcjs_HOST_OS
 runClientM' = runClientMOrigin

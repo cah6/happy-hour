@@ -11,28 +11,28 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
--- | This modules purpose is just to generate the xhr clients.
---   there is some type magick going on generating these,
---   therefore the functions are isolated.
-module ServantReflexClient where
+module ServantReflexClient
+  ( createHH
+  , queryHH
+  )
+  where
 
-import Common.Dto
-import Common.Routes
 import Data.UUID
-import Reflex
 import Reflex.Dom
 import qualified Data.Text as T
 import Servant.API
-import Common.Routes
 import Servant.Reflex
 import Data.Proxy
+
+import Common.Dto
+import Common.ServantRoutes
 
 apiClients :: forall t m. (MonadWidget t m) => _
 apiClients = client hhApi (Proxy @m) (Proxy @()) (constDyn url)
   where url :: BaseUrl
-        url = BaseFullUrl Http "34.203.246.5" 3000 "/"
+        url = BaseFullUrl Http "52.87.157.165" 3000 "/"
 
-createHH :: MonadWidget t m 
+genCreateHH :: MonadWidget t m 
   => Dynamic t (Either T.Text HappyHour) 
   -> Event t () 
   -> m (Event t (ReqResult () UUID))
@@ -49,10 +49,30 @@ getHH :: MonadWidget t m
   => Dynamic t (Either T.Text UUID)
   -> Event t () 
   -> m (Event t (ReqResult () HappyHour))
-queryHH :: MonadWidget t m 
+genQueryHH :: MonadWidget t m 
   => Event t () 
   -> m (Event t (ReqResult () [HappyHour]))
-(createHH :<|> updateHH :<|> deleteHH :<|> getHH :<|> queryHH) = apiClients
+(genCreateHH :<|> updateHH :<|> deleteHH :<|> getHH :<|> genQueryHH) = apiClients
+
+createHH :: MonadWidget t m 
+  => Event t (HappyHour)
+  -> m (Event t ())
+createHH eHH = do 
+  dHH <- holdDyn defaultHH eHH
+  eCreateResult <- genCreateHH (Right <$> dHH) (() <$ eHH)
+  return $ () <$ eCreateResult
+
+queryHH :: MonadWidget t m 
+  => Event t ()
+  -> m (Event t [HappyHour])
+queryHH e = do
+  eReqResult <- genQueryHH e
+  return $ valueOrEmpty <$> eReqResult
+
+valueOrEmpty :: ReqResult () [a] -> [a]
+valueOrEmpty result = case result of
+  ResponseSuccess _ xs _ -> xs
+  _ -> []
 
 showReqResult :: Show a => ReqResult () a -> String
 showReqResult result = case result of 

@@ -26,24 +26,22 @@ import Obelisk.Generated.Static
 import Reflex.Dom 
 import Reflex.Dom.Core
 
-import Common.Dto
-import ServantClient
-
-import Common.Route
-import Common.Routes
 import Data.UUID
 import Data.UUID.V4
 import Reflex.Dom 
 import Servant.API
 
--- import ServantReflexClient
--- import Servant.Reflex hiding (Http)
+import Common.Dto
+import Common.Route
+-- import Common.ServantClient
+import ServantReflexClient
 
-#ifdef ghcjs_HOST_OS
-import Servant.Client.Ghcjs (ClientEnv(..), BaseUrl(..), Scheme(..))
-#else
-import Servant.Client (ClientEnv(..), BaseUrl(..), Scheme(..))
-#endif
+
+-- #ifdef ghcjs_HOST_OS
+-- import Servant.Client.Ghcjs (ClientEnv(..), BaseUrl(..), Scheme(..))
+-- #else
+-- import Servant.Client (ClientEnv(..), BaseUrl(..), Scheme(..))
+-- #endif
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
@@ -57,67 +55,21 @@ frontend = Frontend
   , _frontend_body = prerender (text "Loading...") body 
   }
 
-mkEnv :: Manager -> ClientEnv
-#ifdef ghcjs_HOST_OS
-mkEnv manager = ClientEnv (BaseUrl Http "52.87.157.165" 3000 "")
-#else
-mkEnv manager = ClientEnv manager (BaseUrl Http "52.87.157.165" 3000 "") Nothing
-#endif
+-- mkEnv :: Manager -> ClientEnv
+-- #ifdef ghcjs_HOST_OS
+-- mkEnv manager = ClientEnv (BaseUrl Http "52.87.157.165" 3000 "")
+-- #else
+-- mkEnv manager = ClientEnv manager (BaseUrl Http "52.87.157.165" 3000 "") Nothing
+-- #endif
 
 body :: forall t m. MonadWidget t m => m ()
 body = mdo
-  manager <- liftIO $ newManager defaultManagerSettings
-  let 
-    env = mkEnv manager
   started <- getPostBuild
-  eQueryResult <- restQueryHH env started
+  eQueryResult <- queryHH started
   dHHs <- holdDyn [defaultHH] eQueryResult
   eHappyHourCreated <- searchTab dHHs
-  eRecentlyCreated <- restCreateHH env eHappyHourCreated
+  eRecentlyCreated <- createHH eHappyHourCreated
   return ()
-
--- body :: forall t m. MonadWidget t m => m ()
--- body = mdo
---   eHHs <- liftIO loadHHs
---   uuid <- liftIO nextRandom
---   manager <- liftIO $ newManager defaultManagerSettings
---   let 
---     env = mkEnv manager
---     init = case eHHs of 
---       Right a -> a
---       Left err -> [defaultHH]
---   started <- getPostBuild
---   eQueryResult <- queryHH started
---   let eQueryHHs = handleResponse <$> eQueryResult
---   dHHs <- (holdDyn init eQueryHHs)
---   eHappyHourCreated <- searchTab dHHs 
---   dHappyHourCreated <- holdDyn defaultHH eHappyHourCreated
---   eRecentlyCreated <- traceEventWith showReqResult <$> createHH (Right <$> dHappyHourCreated) (() <$ eHappyHourCreated)
---   return ()
-
--- body :: forall t m. MonadWidget t m => m ()
--- body = mdo
---   eHHs <- liftIO loadHHs
---   uuid <- liftIO nextRandom
---   manager <- liftIO $ newManager defaultManagerSettings
---   let 
---     env = mkEnv manager
---     init = case eHHs of 
---       Right a -> a
---       Left err -> [defaultHH]
---   started <- getPostBuild
---   eQueryResult <- queryHH started
---   let eQueryHHs = handleResponse <$> eQueryResult
---   dHHs <- (holdDyn init eQueryHHs)
---   eHappyHourCreated <- searchTab dHHs 
---   dHappyHourCreated <- holdDyn defaultHH eHappyHourCreated
---   eRecentlyCreated <- traceEventWith showReqResult <$> createHH (Right <$> dHappyHourCreated) (() <$ eHappyHourCreated)
---   return ()
-
--- handleResponse :: ReqResult () [HappyHour] -> [HappyHour]
--- handleResponse result = case result of 	
---   ResponseSuccess _ xs _ -> xs	
---   _ -> []
 
 searchTab :: MonadWidget t m => Dynamic t [HappyHour] -> m (Event t HappyHour)
 searchTab xs = elClass "div" "box" $ do

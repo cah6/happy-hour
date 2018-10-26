@@ -16,6 +16,7 @@ library
                , obelisk-route
                , mtl
                , servant
+               , servant-reflex
                , reflex-dom
                , text
                , time
@@ -26,7 +27,7 @@ library
     build-depends: servant-client
   exposed-modules:
     Frontend
-    ServantClient
+    ServantReflexClient
   ghc-options: -Wall
 
 executable frontend
@@ -37,6 +38,7 @@ executable frontend
                , aeson
                , bifunctors
                , common
+               , common-types
                , containers
                , http-client
                , obelisk-generated-static
@@ -45,6 +47,7 @@ executable frontend
                , mtl
                , reflex-dom
                , servant
+               , servant-reflex
                , text
                , time
                , uuid
