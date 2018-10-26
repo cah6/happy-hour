@@ -25,7 +25,8 @@ import Reflex.Dom.Core
 import Common.Dto
 import Common.Routes
 
-(createHH' :<|> updateHH' :<|> deleteHH' :<|> getHH' :<|> queryHH') = client hhApi
+-- (createHH' :<|> updateHH' :<|> deleteHH' :<|> getHH' :<|> queryHH') = client hhApi
+(createHH' :<|> queryHH') = client hhApi
 
 #ifdef ghcjs_HOST_OS
 runClientM' = runClientMOrigin

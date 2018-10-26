@@ -19,7 +19,7 @@ executable backend-servant
                     , beam-postgres
                     , bloodhound
                     , bytestring
-                    , common
+                    , common-types
                     , connection
                     , containers
                     , directory

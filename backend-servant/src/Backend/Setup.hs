@@ -18,7 +18,7 @@ import Network.Connection (TLSSettings(..))
 import Network.HTTP.Client.TLS (mkManagerSettings, newTlsManagerWith, tlsManagerSettings)
 import Network.Wai
 import Network.Wai.Handler.Warp
-import Network.Wai.Middleware.Cors (simpleCors)
+import Network.Wai.Middleware.Cors
 import Network.Wai.Logger (withStdoutLogger)
 import Servant
 import System.IO
@@ -27,7 +27,7 @@ import Backend.Interfaces
 import Backend.MtlServer
 import qualified Backend.Tables as DB
 import Common.Dto
-import Common.Routes
+import Common.ServantRoutes
 
 -- Define servant level settings and run server
 run :: IO ()
@@ -39,9 +39,16 @@ run = do
     runSettings settings mkApp
 
 mkApp :: Application
-mkApp = simpleCors $ serve hhApi serverDefinition
+mkApp = corsWithContentType $ serve hhApi serverDefinition
     where
   serverDefinition = hoistServer hhApi nt server
+
+-- | Allow Content-Type header with values other then allowed by simpleCors.
+corsWithContentType :: Middleware
+corsWithContentType = cors (const $ Just policy)
+    where
+      policy = simpleCorsResourcePolicy
+        { corsRequestHeaders = ["Content-Type"] }
 
 -- My custom servant stack
 newtype MyApp a = MyApp { runMyApp :: BH (ExceptT ServantErr (LoggingT IO)) a }

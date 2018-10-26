@@ -8,7 +8,7 @@ let
   customHaskellPackages = pinnedHaskellPkgs.override (old: {
     overrides = pinnedPkgs.lib.composeExtensions (old.overrides or (_: _: {})) (self: super: {
       backend-servant = self.callCabal2nix "backend-servant" ./backend-servant { };
-      common = self.callCabal2nix "common" ./common { };
+      common-types = self.callCabal2nix "common-types" ./common-types { };
     });
   });
 

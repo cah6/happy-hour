@@ -8,41 +8,9 @@ license-file: LICENSE
 library
   hs-source-dirs: src
   build-depends:  base
-                , aeson
-                , aeson-pretty
-                , attoparsec
-                , bytestring
-                , containers
-                , directory
-                , obelisk-route
                 , mtl
-                , servant
+                , obelisk-route
                 , text
-                , time
-                , transformers
-                , uuid
 
   exposed-modules:
-    Common.Dto
-    Common.Helper
     Common.Route
-    Common.Routes
-  default-extensions:
-    DataKinds
-    DefaultSignatures
-    DeriveAnyClass
-    DeriveFunctor
-    DeriveGeneric
-    FlexibleContexts
-    FlexibleInstances
-    GADTs
-    GeneralizedNewtypeDeriving
-    InstanceSigs
-    LambdaCase
-    OverloadedStrings
-    StandaloneDeriving
-    RecordWildCards
-    TemplateHaskell
-    TypeFamilies
-    TypeOperators
-    TypeSynonymInstances

@@ -8,6 +8,7 @@ library
   build-depends: base
                , aeson
                , common
+               , common-types
                , containers
                , http-client
                , obelisk-generated-static
