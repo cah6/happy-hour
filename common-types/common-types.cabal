@@ -1,0 +1,46 @@
+name: common-types
+version: 0.1
+cabal-version: >= 1.2
+build-type: Simple
+license: BSD3
+license-file: LICENSE
+
+library
+  hs-source-dirs: src
+  build-depends:  base
+                , aeson
+                , aeson-pretty
+                , attoparsec
+                , bytestring
+                , containers
+                , directory
+                , mtl
+                , servant
+                , text
+                , time
+                , transformers
+                , uuid
+
+  exposed-modules:
+    Common.Dto
+    Common.Helper
+    Common.ServantRoutes
+  default-extensions:
+    DataKinds
+    DefaultSignatures
+    DeriveAnyClass
+    DeriveFunctor
+    DeriveGeneric
+    FlexibleContexts
+    FlexibleInstances
+    GADTs
+    GeneralizedNewtypeDeriving
+    InstanceSigs
+    LambdaCase
+    OverloadedStrings
+    StandaloneDeriving
+    RecordWildCards
+    TemplateHaskell
+    TypeFamilies
+    TypeOperators
+    TypeSynonymInstances
