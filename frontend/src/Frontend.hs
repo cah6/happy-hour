@@ -12,7 +12,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Frontend where
 
-import Control.Monad (forM_, join, liftM)
+import Control.Monad (forM_, join, liftM, void)
 import Control.Monad.Trans (liftIO)
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import Data.Bifunctor (first)
@@ -59,16 +59,17 @@ body = mdo
 searchTab :: MonadWidget t m => Dynamic t [HappyHour] -> m (Event t HappyHour)
 searchTab xs = elClass "div" "box" $ do
   eCreate <- b_button "Create new"
+  filterVal <- _textInput_value <$> horizontalInput "Filter"
   dynMaybeHH <- removingModal eCreate createModal
   let flattenMaybe :: (Reflex t, Show a) => Maybe (Event t a) -> Event t a
       flattenMaybe Nothing  = never
       flattenMaybe (Just a) = a 
       flattened = switchDyn $ flattenMaybe <$> dynMaybeHH
-  elClass "table" "table is-bordered is-striped" $ do 
+  elClass "table" "table is-bordered" $ do 
     el "thead" $ 
       el "tr" $ 
         mapM_ (elAttr "th" ("scope" =: "col") . text) cols
-    _ <- dyn (mkTableBody <$> xs)
+    _ <- mkTableBody (filterHappyHours <$> xs <*> filterVal)
     return ()
   elAttr "iframe" (
         "width" =: "600"
@@ -78,6 +79,19 @@ searchTab xs = elClass "div" "box" $ do
     <> "src" =: "https://www.google.com/maps/embed/v1/place?key=AIzaSyDxM3_sjDAP1kDHzbRMkZ6Ky7BYouXfVOs&q=place_id:ChIJMSuIlbnSJIgRbUFj__-VGdA&q=ChIJMUfEOWEtO4gRddDKWmgPMpI"
     ) blank
   return flattened
+
+filterHappyHours :: [HappyHour] -> T.Text -> [HappyHour]
+filterHappyHours xs text = 
+  let
+    containsInput = T.isInfixOf text
+    anyScheduleContains :: [Schedule] -> Bool
+    anyScheduleContains sx = any (containsInput . _scheduleDescription) sx
+    filterSingle x = 
+        containsInput (_restaurant x) 
+     || containsInput (_city x)
+     || anyScheduleContains (_schedule x)
+  in
+    filter filterSingle xs
 
 createModal :: MonadWidget t m => () -> m (Event t HappyHour, Event t ())
 createModal _ = do
@@ -94,7 +108,7 @@ createModal _ = do
     return (tagPromptlyDyn dynHappyHour eSubmit, leftmost [eClose, eCancel, eSubmit])
 
 createTab :: MonadWidget t m => m ()
-createTab = createFields >>= \_ -> return ()
+createTab = createFields >> return ()
 
 createFields :: MonadWidget t m 
   => m (Dynamic t HappyHour)
@@ -231,24 +245,34 @@ singleDayBtnAttrs isSelected = if isSelected
   else 
     "class" =: "button"
 
-mkTableBody :: MonadWidget t m => [HappyHour] -> m ()
-mkTableBody xs = el "tbody" 
-      $ mapM_ mkRow xs 
+mkTableBody :: MonadWidget t m => Dynamic t [HappyHour] -> m ()
+mkTableBody xs = void (el "tbody" $ simpleList xs (mkRow 0))
+
+-- mkBuiltInTable :: MonadWidget t m => Dynamic t [HappyHour] -> m ()
+-- mkBuiltInTable dynHHs =
+--   let
+--     dRowsList = zip [(1 :: Integer)..] <$> dynHHs
+--     dRows = M.fromList <$> dRowsList
+--     dCols = M.fromList $ zip cols mkRow
+--   in 
+--     tableDynAttr "td" dCols dRows undefined >> return ()
 
 cols :: [T.Text]
-cols = ["Restaurant", "City", "Time", "Description"]
+cols = ["Restaurant", "City", "Time", "Description", "Action"]
 
 mkRow :: MonadWidget t m 
-       => HappyHour
-       -> m ()
-mkRow hh = forM_ (_schedule hh) $ \schedule ->
+      => Integer
+      -> Dynamic t HappyHour
+      -> m ()
+mkRow i dHHs = simpleList (_schedule <$> dHHs) (\schedule ->
   let
-    c1 = elAttr "a" ("href" =: _link hh) (text (_restaurant hh))
-    c2 = text $ _city hh
-    c3 = text $ times schedule
-    c4 = text $ _scheduleDescription schedule
+    mkLinkAttrs hh = ("href" =: _link hh)
+    c1 = elDynAttr "a" (mkLinkAttrs <$> dHHs) (dynText (_restaurant <$> dHHs))
+    c2 = dynText $ _city <$> dHHs
+    c3 = dynText $ times <$> schedule
+    c4 = dynText $ _scheduleDescription <$> schedule
   in 
-    row [c1, c2, c3, c4]
+    row [c1, c2, c3, c4]) >> return ()
 
 times :: Schedule -> T.Text
 times Schedule{ _days, _time } = 
