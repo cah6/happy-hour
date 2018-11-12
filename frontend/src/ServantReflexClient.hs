@@ -36,23 +36,23 @@ genCreateHH :: MonadWidget t m
   => Dynamic t (Either T.Text HappyHour) 
   -> Event t () 
   -> m (Event t (ReqResult () UUID))
-updateHH :: MonadWidget t m
-  => Dynamic t (Either T.Text UUID)
-  -> Dynamic t (Either T.Text HappyHour)
-  -> Event t ()
-  -> m (Event t (ReqResult () NoContent))
-deleteHH :: MonadWidget t m
-  => Dynamic t (Either T.Text UUID)
-  -> Event t () 
-  -> m (Event t (ReqResult () NoContent))
-getHH :: MonadWidget t m
-  => Dynamic t (Either T.Text UUID)
-  -> Event t () 
-  -> m (Event t (ReqResult () HappyHour))
+-- updateHH :: MonadWidget t m
+--   => Dynamic t (Either T.Text UUID)
+--   -> Dynamic t (Either T.Text HappyHour)
+--   -> Event t ()
+--   -> m (Event t (ReqResult () NoContent))
+-- deleteHH :: MonadWidget t m
+--   => Dynamic t (Either T.Text UUID)
+--   -> Event t () 
+--   -> m (Event t (ReqResult () NoContent))
+-- getHH :: MonadWidget t m
+--   => Dynamic t (Either T.Text UUID)
+--   -> Event t () 
+--   -> m (Event t (ReqResult () HappyHour))
 genQueryHH :: MonadWidget t m 
   => Event t () 
   -> m (Event t (ReqResult () [HappyHour]))
-(genCreateHH :<|> updateHH :<|> deleteHH :<|> getHH :<|> genQueryHH) = apiClients
+(genCreateHH :<|> _ :<|> _ :<|> _ :<|> genQueryHH) = apiClients
 
 createHH :: MonadWidget t m 
   => Event t (HappyHour)
@@ -74,8 +74,8 @@ valueOrEmpty result = case result of
   ResponseSuccess _ xs _ -> xs
   _ -> []
 
-showReqResult :: Show a => ReqResult () a -> String
-showReqResult result = case result of 
+_showReqResult :: Show a => ReqResult () a -> String
+_showReqResult result = case result of 
   ResponseSuccess _ a _ -> "Response success: " ++ show a
   ResponseFailure _ t _ -> "Response failure: " ++ show t
   RequestFailure _ t    -> "Request failure: " ++ show t
