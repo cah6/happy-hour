@@ -13,6 +13,7 @@ import Data.Time (formatTime)
 import Data.Time.Calendar (Day(..))
 import Data.Time.Format (defaultTimeLocale)
 import Data.Time.LocalTime (TimeOfDay(..))
+import Data.UUID (UUID)
 import System.Directory (listDirectory)
 
 import Common.Helper (attoToAeson)
@@ -66,14 +67,16 @@ parseTimeRange = do
 
 defaultHH :: HappyHour
 defaultHH = HappyHour 
-  { _city = ""
+  { _id = Nothing
+  , _city = ""
   , _restaurant = ""
   , _schedule = []
   , _link = ""
   }
 
 data HappyHour = HappyHour
-  { _city :: Text
+  { _id :: Maybe UUID
+  , _city :: Text
   , _restaurant :: Text
   , _schedule :: [Schedule]
   , _link :: Text

@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeFamilies #-}
 module Backend.Interfaces where
 
-import Control.Monad.Except (ExceptT)
+import Control.Monad.Except (ExceptT, void)
 import Control.Monad.Logger (LoggingT)
 import Control.Monad.Trans (MonadTrans(..))
 import Database.Beam
@@ -69,8 +69,7 @@ instance (MonadBH m) => MonadCrudHappyHour (BH m) where
     let 
       docId = DocId (toText uuid)
     in
-      indexDocument hhIndex hhMapping defaultIndexDocumentSettings hh docId 
-        >>= \_ -> return ()
+      void $ indexDocument hhIndex hhMapping defaultIndexDocumentSettings hh docId 
 
   getHappyHour uuid = 
     let
@@ -84,6 +83,9 @@ instance (MonadBH m) => MonadCrudHappyHour (BH m) where
     let
       docId = DocId (toText uuid)
     in
-      deleteDocument hhIndex hhMapping docId >>= \_ -> return ()
+      void $ deleteDocument hhIndex hhMapping docId
 
-  queryHappyHours qp = searchByIndex hhIndex (mkSearch Nothing Nothing)
+  queryHappyHours qp = do 
+    reply <- searchByIndex hhIndex (mkSearch Nothing Nothing)
+    liftIO $ putStrLn (show reply)
+    return reply

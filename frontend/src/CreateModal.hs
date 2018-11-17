@@ -43,7 +43,7 @@ createFields = elClass "div" "box" $ do
   city <- _textInput_value <$> horizontalInput "City name:"
   linkVal <- _textInput_value <$> horizontalInput "Link to description:"
   dynSchedules <- scheduleInput
-  return $ HappyHour <$> city <*> restaurant <*> dynSchedules <*> linkVal
+  return $ HappyHour <$> pure Nothing <*> city <*> restaurant <*> dynSchedules <*> linkVal
 
 scheduleInput :: MonadWidget t m => m (Dynamic t [Schedule])
 scheduleInput = 

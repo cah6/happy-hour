@@ -4,7 +4,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RecursiveDo #-}
@@ -17,7 +16,9 @@ import qualified Data.Text as T
 import Control.Monad (void)
 import Control.Monad.Trans (liftIO)
 import Data.Bifunctor (first)
+import Data.List (sortBy)
 import Data.Monoid ((<>))
+import Data.UUID (toText, UUID)
 import Obelisk.Frontend
 import Obelisk.Route
 import Reflex.Dom
@@ -30,14 +31,19 @@ import ServantReflexClient
 
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
-  { _frontend_head = do 
+  { _frontend_head = do
       el "title" $ text "Happy Hours"
-      elAttr "link" ("href" =: "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css" 
-                  <> "rel" =: "stylesheet" 
+      elAttr "link" ("href" =: "https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.1/css/bulma.min.css"
+                  <> "rel" =: "stylesheet"
                   <> "type" =: "text/css"
                   ) blank
+      elAttr "link" ("href" =: "https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+                  <> "rel" =: "stylesheet"
+                  <> "integrity" =: "sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU"
+                  <> "crossorigin" =: "anonymous"
+                  ) blank
       return ()
-  , _frontend_body = prerender (text "Loading...") body 
+  , _frontend_body = prerender (text "Loading...") body
   }
 
 body :: forall t m. MonadWidget t m => m ()
@@ -45,7 +51,7 @@ body = mdo
   started <- getPostBuild
   eQueryResult <- queryHH started
   dHHs <- holdDyn [defaultHH] eQueryResult
-  eHappyHourCreated <- searchTab dHHs
+  eHappyHourCreated <- searchTab (sortBy sortByRestaurant <$> dHHs)
   _ <- createHH eHappyHourCreated
   return ()
 
@@ -56,11 +62,11 @@ searchTab xs = elClass "div" "box" $ do
   dynMaybeHH <- removingModal eCreate createModal
   let flattenMaybe :: Reflex t => Maybe (Event t a) -> Event t a
       flattenMaybe Nothing  = never
-      flattenMaybe (Just a) = a 
+      flattenMaybe (Just a) = a
       flattened = switchDyn $ flattenMaybe <$> dynMaybeHH
-  elClass "table" "table is-bordered" $ do 
-    el "thead" $ 
-      el "tr" $ 
+  elClass "table" "table is-bordered" $ do
+    el "thead" $
+      el "tr" $
         mapM_ (elAttr "th" ("scope" =: "col") . text) cols
     _ <- mkTableBody (filterHappyHours <$> xs <*> filterVal)
     return ()
@@ -73,14 +79,17 @@ searchTab xs = elClass "div" "box" $ do
     ) blank
   return flattened
 
+sortByRestaurant :: HappyHour -> HappyHour -> Ordering
+sortByRestaurant a1 a2 = compare (_restaurant a1) (_restaurant a2)
+
 filterHappyHours :: [HappyHour] -> T.Text -> [HappyHour]
-filterHappyHours xs currentTextInput = 
+filterHappyHours xs currentTextInput =
   let
     containsInput = T.isInfixOf currentTextInput
     anyScheduleContains :: [Schedule] -> Bool
-    anyScheduleContains sx = any (containsInput . _scheduleDescription) sx
-    filterSingle x = 
-        containsInput (_restaurant x) 
+    anyScheduleContains = any (containsInput . _scheduleDescription)
+    filterSingle x =
+        containsInput (_restaurant x)
      || containsInput (_city x)
      || anyScheduleContains (_schedule x)
   in
@@ -101,35 +110,59 @@ mkTableBody xs = void $ el "tbody" (simpleList xs mkRow)
 cols :: [T.Text]
 cols = ["Restaurant", "City", "Time", "Description", "Action"]
 
+data RowAction =
+    DeleteClicked UUID
+  | EditClicked UUID
+
 mkRow :: MonadWidget t m
       => Dynamic t HappyHour
-      -> m ()
-mkRow dHHs = simpleList (_schedule <$> dHHs) (\schedule ->
+      -> m (Event t RowAction)
+mkRow dA = flattenDynList <$> simpleList (_schedule <$> dA) (\schedule ->
   let
     mkLinkAttrs hh = ("href" =: _link hh)
-    c1 = elDynAttr "a" (mkLinkAttrs <$> dHHs) (dynText (_restaurant <$> dHHs))
-    c2 = dynText $ _city <$> dHHs
+    c1 = elDynAttr "a" (mkLinkAttrs <$> dA) (dynText (_restaurant <$> dA))
+    c2 = dynText $ _city <$> dA
     c3 = dynText $ times <$> schedule
     c4 = dynText $ _scheduleDescription <$> schedule
-  in 
-    row [c1, c2, c3, c4]) >> return ()
+    c5 = do
+      eEdit <- icon "edit"
+      eDelete <- icon "trash-alt"
+      dynText $ uuidText <$> dA
+      return (leftmost [EditClicked <$> tagA dA eEdit, DeleteClicked <$> tagA dA eDelete])
+  in
+    row [c1, c2, c3, c4] c5)
+
+flattenDynList :: Reflex t => Dynamic t [Event t a] -> Event t a
+flattenDynList dxs = switchDyn (leftmost <$> dxs)
+
+tagA :: Reflex t => Dynamic t HappyHour -> Event t () -> Event t UUID
+tagA dA e = fmapMaybe _id $ tag (current dA) e
+
+uuidText :: HappyHour -> T.Text
+uuidText a = case _id a of
+  Nothing -> "Nothing"
+  Just x -> toText x
 
 times :: Schedule -> T.Text
-times Schedule{ _days, _time } = 
-  let 
+times Schedule{ _days, _time } =
+  let
     days = printDays _days
     time = printTimeRange _time
-  in 
+  in
     days <> ", " <> time
 
 flattenHH :: HappyHour -> [HappyHour]
-flattenHH HappyHour{_schedule, ..} = map (\s -> HappyHour {_schedule = [s], .. } ) $ _schedule
+flattenHH HappyHour{_schedule, ..} = map (\s -> HappyHour {_schedule = [s], .. } ) _schedule
 
 row :: MonadWidget t m
-  => [m a]
-  -> m ()
-row xs = el "tr" $ mapM_ (el "td") xs
+  => [m ()]
+  -> m a
+  -> m a
+row xs lastCol = el "tr" $ do
+  mapM_ (el "td") xs
+  el "td" lastCol
 
+-- "Removing" modal taken from reflex-dom-contribs
 removingModal
   :: MonadWidget t m
   => Event t a
@@ -153,5 +186,9 @@ removingModal showm modalBody = do
 -- Utils
 
 putDebugLnE :: MonadWidget t m => Event t a -> (a -> String) -> m ()
-putDebugLnE e mkStr = do
-    performEvent_ (liftIO . putStrLn . mkStr <$> e)
+putDebugLnE e mkStr = performEvent_ (liftIO . putStrLn . mkStr <$> e)
+
+icon :: MonadWidget t m => T.Text -> m (Event t ())
+icon name = do
+  (e, _) <- elClass' "span" "icon" $ elClass "i" ("fas fa-" <> name) blank
+  return $ domEvent Click e

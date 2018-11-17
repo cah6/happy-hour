@@ -30,3 +30,4 @@ horizontalInput :: MonadWidget t m => T.Text -> m (TextInput t)
 horizontalInput label = elAttr "div" ("class" =: "field") $ do
   elClass "label" "label" $ text label
   textInput $ def { _textInputConfig_attributes = constDyn ("class" =: "control" )}
+  

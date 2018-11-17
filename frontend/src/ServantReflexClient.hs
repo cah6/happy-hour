@@ -30,7 +30,8 @@ import Common.ServantRoutes
 apiClients :: forall t m. (MonadWidget t m) => _
 apiClients = client hhApi (Proxy @m) (Proxy @()) (constDyn url)
   where url :: BaseUrl
-        url = BaseFullUrl Http "54.86.132.63" 3000 "/"
+        -- url = BaseFullUrl Http "54.86.132.63" 3000 "/"
+        url = BaseFullUrl Http "localhost" 3000 "/"
 
 genCreateHH :: MonadWidget t m 
   => Dynamic t (Either T.Text HappyHour) 
@@ -41,10 +42,10 @@ genCreateHH :: MonadWidget t m
 --   -> Dynamic t (Either T.Text HappyHour)
 --   -> Event t ()
 --   -> m (Event t (ReqResult () NoContent))
--- deleteHH :: MonadWidget t m
---   => Dynamic t (Either T.Text UUID)
---   -> Event t () 
---   -> m (Event t (ReqResult () NoContent))
+genDeleteHH :: MonadWidget t m
+  => Dynamic t (Either T.Text UUID)
+  -> Event t () 
+  -> m (Event t (ReqResult () NoContent))
 -- getHH :: MonadWidget t m
 --   => Dynamic t (Either T.Text UUID)
 --   -> Event t () 
@@ -52,7 +53,7 @@ genCreateHH :: MonadWidget t m
 genQueryHH :: MonadWidget t m 
   => Event t () 
   -> m (Event t (ReqResult () [HappyHour]))
-(genCreateHH :<|> _ :<|> _ :<|> _ :<|> genQueryHH) = apiClients
+genCreateHH :<|> _ :<|> genDeleteHH :<|> _ :<|> genQueryHH = apiClients
 
 createHH :: MonadWidget t m 
   => Event t (HappyHour)
@@ -61,6 +62,14 @@ createHH eHH = do
   dHH <- holdDyn defaultHH eHH
   eCreateResult <- genCreateHH (Right <$> dHH) (() <$ eHH)
   return $ () <$ eCreateResult
+
+deleteHH :: MonadWidget t m 
+  => Event t (UUID)
+  -> m (Event t ())
+deleteHH eId = do 
+  dId <- holdDyn nil eId
+  eDeleteResult <- genDeleteHH (Right <$> dId) (() <$ eId)
+  return $ () <$ eDeleteResult
 
 queryHH :: MonadWidget t m 
   => Event t ()

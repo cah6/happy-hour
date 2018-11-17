@@ -79,7 +79,8 @@ nt (MyApp m) = do
 provideEnv :: IO BHEnv
 provideEnv = do
   manager <- newTlsManagerWith tlsSettings -- tlsManagerSettings
-  return $ mkBHEnv (Server "https://vpc-cah6-elasticsearch-latlipjj7s2hvychxflphnoup4.us-east-1.es.amazonaws.com:443") manager
+  -- return $ mkBHEnv (Server "https://vpc-cah6-elasticsearch-latlipjj7s2hvychxflphnoup4.us-east-1.es.amazonaws.com:443") manager
+  return $ mkBHEnv (Server "https://localhost:9200") manager
     where
   tlsSettings = mkManagerSettings (TLSSettingsSimple True True True) Nothing
 
