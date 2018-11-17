@@ -17,4 +17,17 @@ project ./. ({ pkgs, ... }: {
 
     common-types = self.callCabal2nix "common-types" ./common-types { };
   };
+
+  shellToolOverrides = ghc: super: {
+    hlint = pkgs.haskellPackages.hlint;
+    # ghc-exactprint = pkgs.haskell.lib.dontCheck pkgs.haskellPackages.ghc-exactprint;
+    # apply-refact = pkgs.haskellPackages.apply-refact;
+    
+    hie = (import (nixpkgs.fetchFromGitHub {
+                   owner="domenkozar";
+                   repo="hie-nix";
+                   rev="96af698f0cfefdb4c3375fc199374856b88978dc";
+                   sha256="1ar0h12ysh9wnkgnvhz891lvis6x9s8w3shaakfdkamxvji868qa";
+                 }) {}).hie84;
+  };
 })
