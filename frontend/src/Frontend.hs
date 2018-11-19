@@ -101,15 +101,18 @@ mkTableBody :: MonadWidget t m => Dynamic t [HappyHour] -> m ()
 mkTableBody xs = do 
   let rows = simpleList xs mkRow
   (eDelete, eEdit) <- flattenDynList <$> el "tbody" rows
-  eDeleted <- deleteHH (coerce <$> eDelete)
-  let
-      extract :: [HappyHour] -> UUID -> Maybe HappyHour
-      extract as uuid = listToMaybe $ filter (isId uuid) as
-      
-      eA = attachPromptlyDynWithMaybe extract xs (coerce <$> eEdit)
-
-  removingModal eA createModal
+  _ <- deleteHH (coerce <$> eDelete)
+  _ <- removingModal (openModalEvent xs eEdit) createModal
   return ()
+
+openModalEvent :: (Reflex t) 
+  => Dynamic t [HappyHour] 
+  -> Event t EditClicked
+  -> Event t HappyHour
+openModalEvent dA eEdit = 
+  let extract :: [HappyHour] -> UUID -> Maybe HappyHour
+      extract as uuid = listToMaybe $ filter (isId uuid) as
+  in  attachPromptlyDynWithMaybe extract dA (coerce <$> eEdit)
 
 isId :: UUID -> HappyHour -> Bool
 isId uuid a = case (_id a) of 
@@ -165,7 +168,6 @@ mkRow dA = flattenDynList <$> simpleList (_schedule <$> dA) (\schedule ->
     c5 = do
       eEdit <- icon "edit"
       eDelete <- icon "trash-alt"
-      dynText $ uuidText <$> dA
       return (DeleteClicked <$> tagA dA eDelete, EditClicked <$> tagA dA eEdit)
   in
     row [c1, c2, c3, c4] c5)

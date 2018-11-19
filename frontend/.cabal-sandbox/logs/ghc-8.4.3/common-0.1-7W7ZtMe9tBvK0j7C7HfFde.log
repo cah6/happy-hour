@@ -1,9 +1,0 @@
-cabal: Entering directory '../common'
-Configuring common-0.1...
-clang-5.0: warning: argument unused during compilation: '-nopie' [-Wunused-command-line-argument]
-Preprocessing library for common-0.1..
-Building library for common-0.1..
-[1 of 1] Compiling Common.Route     ( src/Common/Route.hs, dist/dist-sandbox-d4bf5ffb/build/Common/Route.o )
-ignoring (possibly broken) abi-depends field for packages
-Installing library in /Users/christian.henry/coding/haskell/happy-hour-backend/frontend/.cabal-sandbox/lib/x86_64-osx-ghc-8.4.3/common-0.1-7W7ZtMe9tBvK0j7C7HfFde
-cabal: Leaving directory '../common'

@@ -15,7 +15,6 @@ module CreateModal(createModal) where
 import qualified Data.Map.Lazy as M
 import qualified Data.Text as T
 
-import Control.Monad (join)
 import Data.Coerce (coerce)
 import Data.Time
 import Reflex.Dom
@@ -24,13 +23,13 @@ import Common.Dto
 import FrontendCommon
 
 createModal :: MonadWidget t m => HappyHour -> m (Event t HappyHour, Event t ())
-createModal init = do
+createModal initial = do
   elClass "div" "modal-background" blank
   elClass "div" "modal-card" $ do
     eClose <- elClass "header" "modal-card-head" $ do
       elClass "p" "modal-card-title" $ text "Create a happy hour"
       b_delete
-    dynHappyHour <- elClass "section" "modal-card-body" (createFields init)
+    dynHappyHour <- elClass "section" "modal-card-body" (createFields initial)
     (eSubmit, eCancel) <- elClass "footer" "modal-card-foot" $ do
       eSubmit <- b_button "Submit"
       eCancel <- b_button "Cancel"
@@ -164,7 +163,7 @@ normalizeTo12Hour :: TimeOfDay -> TimeOfDay
 normalizeTo12Hour (TimeOfDay h m s) = TimeOfDay (mod h 12) m s
 
 amOrPm :: TimeOfDay -> AmPm
-amOrPm (TimeOfDay h m s) = if h < 12 then AM else PM
+amOrPm (TimeOfDay h _ _) = if h < 12 then AM else PM
 
 timeOfDaySelect :: MonadWidget t m 
   => TimeOfDay
