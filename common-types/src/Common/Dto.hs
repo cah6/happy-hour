@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards, DeriveAnyClass, DeriveGeneric, OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, RecordWildCards, DeriveAnyClass, DeriveGeneric, OverloadedStrings #-}
 module Common.Dto where
 
 import qualified Data.Attoparsec.Text as AP
@@ -70,7 +70,7 @@ defaultHH = HappyHour
   { _id = Nothing
   , _city = ""
   , _restaurant = ""
-  , _schedule = []
+  , _schedule = [defaultSchedule]
   , _link = ""
   }
 
@@ -93,6 +93,13 @@ data Schedule = Schedule
   , _time :: TimeRange
   , _scheduleDescription :: Text
   } deriving (Generic, Show)
+  
+defaultSchedule :: Schedule
+defaultSchedule = Schedule
+  { _days = []
+  , _time = TimeRange (TimeOfDay 16 0 0, TimeOfDay 18 0 0)
+  , _scheduleDescription = ""
+  }
 
 data DayOfWeek =
     Sunday

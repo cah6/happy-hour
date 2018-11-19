@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -Wno-partial-type-signatures #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE PartialTypeSignatures #-}
@@ -13,6 +12,7 @@
 
 module ServantReflexClient
   ( createHH
+  , deleteHH
   , queryHH
   )
   where
@@ -33,9 +33,9 @@ apiClients = client hhApi (Proxy @m) (Proxy @()) (constDyn url)
         -- url = BaseFullUrl Http "54.86.132.63" 3000 "/"
         url = BaseFullUrl Http "localhost" 3000 "/"
 
-genCreateHH :: MonadWidget t m 
-  => Dynamic t (Either T.Text HappyHour) 
-  -> Event t () 
+genCreateHH :: MonadWidget t m
+  => Dynamic t (Either T.Text HappyHour)
+  -> Event t ()
   -> m (Event t (ReqResult () UUID))
 -- updateHH :: MonadWidget t m
 --   => Dynamic t (Either T.Text UUID)
@@ -44,34 +44,34 @@ genCreateHH :: MonadWidget t m
 --   -> m (Event t (ReqResult () NoContent))
 genDeleteHH :: MonadWidget t m
   => Dynamic t (Either T.Text UUID)
-  -> Event t () 
+  -> Event t ()
   -> m (Event t (ReqResult () NoContent))
 -- getHH :: MonadWidget t m
 --   => Dynamic t (Either T.Text UUID)
 --   -> Event t () 
 --   -> m (Event t (ReqResult () HappyHour))
-genQueryHH :: MonadWidget t m 
-  => Event t () 
+genQueryHH :: MonadWidget t m
+  => Event t ()
   -> m (Event t (ReqResult () [HappyHour]))
 genCreateHH :<|> _ :<|> genDeleteHH :<|> _ :<|> genQueryHH = apiClients
 
-createHH :: MonadWidget t m 
-  => Event t (HappyHour)
+createHH :: MonadWidget t m
+  => Event t HappyHour
   -> m (Event t ())
-createHH eHH = do 
+createHH eHH = do
   dHH <- holdDyn defaultHH eHH
   eCreateResult <- genCreateHH (Right <$> dHH) (() <$ eHH)
   return $ () <$ eCreateResult
 
-deleteHH :: MonadWidget t m 
-  => Event t (UUID)
+deleteHH :: MonadWidget t m
+  => Event t UUID
   -> m (Event t ())
-deleteHH eId = do 
+deleteHH eId = do
   dId <- holdDyn nil eId
   eDeleteResult <- genDeleteHH (Right <$> dId) (() <$ eId)
   return $ () <$ eDeleteResult
 
-queryHH :: MonadWidget t m 
+queryHH :: MonadWidget t m
   => Event t ()
   -> m (Event t [HappyHour])
 queryHH e = do
@@ -84,7 +84,7 @@ valueOrEmpty result = case result of
   _ -> []
 
 _showReqResult :: Show a => ReqResult () a -> String
-_showReqResult result = case result of 
+_showReqResult result = case result of
   ResponseSuccess _ a _ -> "Response success: " ++ show a
   ResponseFailure _ t _ -> "Response failure: " ++ show t
   RequestFailure _ t    -> "Request failure: " ++ show t

@@ -4,10 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE RecursiveDo #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 module FrontendCommon where
@@ -30,4 +27,12 @@ horizontalInput :: MonadWidget t m => T.Text -> m (TextInput t)
 horizontalInput label = elAttr "div" ("class" =: "field") $ do
   elClass "label" "label" $ text label
   textInput $ def { _textInputConfig_attributes = constDyn ("class" =: "control" )}
+  
+horizontalInputWithInit :: MonadWidget t m => T.Text -> T.Text -> m (TextInput t)
+horizontalInputWithInit initial label = elAttr "div" ("class" =: "field") $ do
+  elClass "label" "label" $ text label
+  textInput $ def 
+    { _textInputConfig_attributes = constDyn ("class" =: "control" )
+    , _textInputConfig_initialValue = initial
+    }
   

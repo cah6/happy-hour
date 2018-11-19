@@ -48,7 +48,9 @@ corsWithContentType :: Middleware
 corsWithContentType = cors (const $ Just policy)
     where
       policy = simpleCorsResourcePolicy
-        { corsRequestHeaders = ["Content-Type"] }
+        { corsRequestHeaders = ["Content-Type"] 
+        , corsMethods = ["POST", "GET", "PUT", "DELETE"]
+        }
 
 -- My custom servant stack
 newtype MyApp a = MyApp { runMyApp :: BH (ExceptT ServantErr (LoggingT IO)) a }

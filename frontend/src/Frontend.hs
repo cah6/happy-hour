@@ -13,10 +13,12 @@ module Frontend where
 
 import qualified Data.Text as T
 
-import Control.Monad (void)
+import Control.Monad (join, void)
 import Control.Monad.Trans (liftIO)
 import Data.Bifunctor (first)
+import Data.Coerce (coerce)
 import Data.List (sortBy)
+import Data.Maybe (listToMaybe)
 import Data.Monoid ((<>))
 import Data.UUID (toText, UUID)
 import Obelisk.Frontend
@@ -59,7 +61,7 @@ searchTab :: MonadWidget t m => Dynamic t [HappyHour] -> m (Event t HappyHour)
 searchTab xs = elClass "div" "box" $ do
   eCreate <- b_button "Create new"
   filterVal <- _textInput_value <$> horizontalInput "Filter"
-  dynMaybeHH <- removingModal eCreate createModal
+  dynMaybeHH <- removingModal ((\_ -> defaultHH) <$> eCreate) createModal
   let flattenMaybe :: Reflex t => Maybe (Event t a) -> Event t a
       flattenMaybe Nothing  = never
       flattenMaybe (Just a) = a
@@ -96,7 +98,38 @@ filterHappyHours xs currentTextInput =
     filter filterSingle xs
 
 mkTableBody :: MonadWidget t m => Dynamic t [HappyHour] -> m ()
-mkTableBody xs = void $ el "tbody" (simpleList xs mkRow)
+mkTableBody xs = do 
+  let rows = simpleList xs mkRow
+  (eDelete, eEdit) <- flattenDynList <$> el "tbody" rows
+  eDeleted <- deleteHH (coerce <$> eDelete)
+  let
+      extract :: [HappyHour] -> UUID -> Maybe HappyHour
+      extract as uuid = listToMaybe $ filter (isId uuid) as
+      
+      eA = attachPromptlyDynWithMaybe extract xs (coerce <$> eEdit)
+
+  removingModal eA createModal
+  return ()
+
+isId :: UUID -> HappyHour -> Bool
+isId uuid a = case (_id a) of 
+  Nothing -> False
+  Just a -> uuid == a
+
+-- handleRowAction :: MonadWidget t m => Dynamic t [HappyHour] -> RowAction t -> m (Event t ())
+-- handleRowAction dxs (eDelete, eEdit) = do
+  
+--   removingModal eEdit createModal
+--   return eDeleted
+
+-- -- fanEither eRowAction
+--   let
+--     go :: MonadWidget t m => RowAction -> m (Event t ())
+--     go (DeleteClicked duuid, EditClicked euuid) = do 
+--       eDeleted <- deleteHH $ fmap (\ra -> duuid) eRowAction
+--       return eDeleted
+--   in
+--     return (go <$> eRowAction)
 
 -- mkBuiltInTable :: MonadWidget t m => Dynamic t [HappyHour] -> m ()
 -- mkBuiltInTable dynHHs =
@@ -110,13 +143,18 @@ mkTableBody xs = void $ el "tbody" (simpleList xs mkRow)
 cols :: [T.Text]
 cols = ["Restaurant", "City", "Time", "Description", "Action"]
 
-data RowAction =
-    DeleteClicked UUID
-  | EditClicked UUID
+-- data RowAction =
+--     DeleteClicked UUID
+--   | EditClicked UUID
+
+type RowAction t = (Event t DeleteClicked, Event t EditClicked)
+
+newtype DeleteClicked = DeleteClicked UUID
+newtype EditClicked = EditClicked UUID
 
 mkRow :: MonadWidget t m
       => Dynamic t HappyHour
-      -> m (Event t RowAction)
+      -> m (RowAction t)
 mkRow dA = flattenDynList <$> simpleList (_schedule <$> dA) (\schedule ->
   let
     mkLinkAttrs hh = ("href" =: _link hh)
@@ -128,12 +166,15 @@ mkRow dA = flattenDynList <$> simpleList (_schedule <$> dA) (\schedule ->
       eEdit <- icon "edit"
       eDelete <- icon "trash-alt"
       dynText $ uuidText <$> dA
-      return (leftmost [EditClicked <$> tagA dA eEdit, DeleteClicked <$> tagA dA eDelete])
+      return (DeleteClicked <$> tagA dA eDelete, EditClicked <$> tagA dA eEdit)
   in
     row [c1, c2, c3, c4] c5)
 
-flattenDynList :: Reflex t => Dynamic t [Event t a] -> Event t a
-flattenDynList dxs = switchDyn (leftmost <$> dxs)
+flattenDynList :: Reflex t => Dynamic t [(Event t a, Event t b)] -> (Event t a, Event t b)
+flattenDynList dxs = 
+  let dLeft = leftmost <$> (fmap . fmap) fst dxs
+      dRight = leftmost <$> (fmap . fmap) snd dxs
+  in  (switchDyn dLeft, switchDyn dRight)
 
 tagA :: Reflex t => Dynamic t HappyHour -> Event t () -> Event t UUID
 tagA dA e = fmapMaybe _id $ tag (current dA) e
